@@ -338,9 +338,14 @@ const RaceSlider = ({ label, value, onChange, color }) => (
 );
 
 // ── Main App ─────────────────────────────────────────────────────────────────
+// Snap Malay slider to nearest DUN step (10/15/20/25/30)
+function snapDunSwing(v) {
+  const steps = [10, 15, 20, 25, 30];
+  return String(steps.reduce((a, b) => Math.abs(b - v) < Math.abs(a - v) ? b : a));
+}
+
 export default function App() {
   const [tab, setTab] = useState("parliament");
-  const [dunSwing, setDunSwing] = useState("15");
   const [malaySwing, setMalaySwing] = useState(15);
   const [chineseSwing, setChineseSwing] = useState(0);
   const [indianSwing, setIndianSwing] = useState(0);
@@ -402,7 +407,8 @@ export default function App() {
     .filter(d => (d.orig + d.flip) > 0)
     .sort((a, b) => (b.orig + b.flip) - (a.orig + a.flip));
 
-  // DUN tab data
+  // DUN tab data — snapped to nearest available step from Malay slider
+  const dunSwing = snapDunSwing(malaySwing);
   const dn = DUN[dunSwing];
   const dunChart = Object.entries(dn.states).map(([st, v]) => ({
     name: st.replace("P. Pinang", "P.Pinang").replace("N. Sembilan", "N.Semb"),
@@ -515,16 +521,10 @@ export default function App() {
         </div>
       ) : (
         <div>
-          {/* DUN uses original static model — driven by Malay swing only */}
-          <div style={{ background: B.cream, border: `1px solid ${B.border}`, borderLeft: `3px solid ${B.accent}`, padding: "8px 12px", marginBottom: 10, fontSize: 9, fontFamily: "'Poppins',sans-serif", lineHeight: 1.5 }}>
-            State DUN uses the original Malay-swing model (race-disaggregated DUN data not yet available). Select a swing level:
-          </div>
-          <div style={{ display: "flex", gap: 0, marginBottom: 12, borderRadius: 4, overflow: "hidden", border: `2px solid ${B.red}` }}>
-            {["10", "15", "20", "25", "30"].map(s => (
-              <button key={s} onClick={() => setDunSwing(s)} style={{ flex: 1, padding: "8px 0", background: dunSwing === s ? B.red : "transparent", color: dunSwing === s ? B.white : B.text, border: "none", cursor: "pointer", fontSize: 12, fontWeight: dunSwing === s ? 800 : 400, fontFamily: "'Poppins',sans-serif" }}>
-                {s}%
-              </button>
-            ))}
+          {/* DUN driven by Malay slider (snapped to nearest 10/15/20/25/30) */}
+          <div style={{ background: B.cream, border: `1px solid ${B.border}`, borderLeft: `3px solid ${B.accent}`, padding: "8px 12px", marginBottom: 10, fontSize: 9, fontFamily: "'Poppins',sans-serif", lineHeight: 1.5, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>State DUN follows the Malay slider above (race-disaggregated DUN data not yet available).</span>
+            <span style={{ fontWeight: 800, fontSize: 11, color: B.red, marginLeft: 10, whiteSpace: "nowrap" }}>Malay {dunSwing}%</span>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
