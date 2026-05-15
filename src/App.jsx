@@ -237,11 +237,11 @@ const SWING_STATES = new Set([
   "Pahang","Selangor","WP KL","WP Putrajaya","N. Sembilan","Melaka","Johor"
 ]);
 
-const PARTY_BASE = {
-  PAS:43, Bersatu:31, DAP:40, PKR:31, Amanah:8, UPKO:1,
-  UMNO:26, MCA:2, MIC:2, PBB:14, SUPP:3, PRS:4, PDP:2,
-  PBS:3, GRS:3, Warisan:3, IND:5,
-};
+// Derive seat counts directly from the SEATS array so they're always consistent
+const PARTY_BASE = SEATS.reduce((acc, [,,, party]) => {
+  acc[party] = (acc[party]||0) + 1;
+  return acc;
+}, { Warisan: 3 }); // Warisan holds 3 Sabah seats not in the peninsular model
 
 const COALITION_PARTIES = {
   PN:      ["PAS","Bersatu"],
