@@ -433,13 +433,14 @@ function StatCard({ value, label, sub, color, size=28 }) {
   );
 }
 
-function PartyBlock({ name, seats, delta, color }) {
+function PartyBlock({ name, seats, delta, color, maxSeats }) {
+  const pct = maxSeats > 0 ? Math.min(seats / maxSeats * 100, 100) : 0;
   return (
     <div style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 0", borderBottom:`1px solid ${C.border}` }}>
       <div style={{ width:3, height:20, background:color, borderRadius:2, flexShrink:0 }} />
       <span style={{ fontSize:11, fontWeight:600, color:C.text, width:52 }}>{name}</span>
       <div style={{ flex:1, height:4, background:C.surface, borderRadius:2, overflow:"hidden" }}>
-        <div style={{ height:"100%", width:`${Math.min(seats/44*100,100)}%`, background:color, borderRadius:2, transition:"width .4s ease" }} />
+        <div style={{ height:"100%", width:`${pct}%`, background:color, borderRadius:2, transition:"width .4s ease" }} />
       </div>
       <span style={{ fontSize:12, fontWeight:700, color:C.text, minWidth:24, textAlign:"right", fontVariantNumeric:"tabular-nums" }}>{seats}</span>
       {delta !== 0 && (
@@ -795,22 +796,25 @@ export default function App() {
           {/* ── Parties tab ── */}
           {subTab === "parties" && (
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-              {Object.entries(COALITION_PARTIES).map(([coName, parties]) => (
-                <div key={coName} className="card" style={{ padding:"14px 16px", borderTop:`3px solid ${COALITION_COLOR[coName]||C.border}` }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                    <span style={{ fontSize:12, fontWeight:700 }}>{coName}</span>
-                    <span style={{ fontSize:11, color:C.muted, fontVariantNumeric:"tabular-nums" }}>
-                      {parties.reduce((s,p)=>s+(partyPost[p]||0),0)} seats
-                    </span>
+              {Object.entries(COALITION_PARTIES).map(([coName, parties]) => {
+                const maxSeats = Math.max(...parties.map(p => partyPost[p]||0), 1);
+                return (
+                  <div key={coName} className="card" style={{ padding:"14px 16px", borderTop:`3px solid ${COALITION_COLOR[coName]||C.border}` }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                      <span style={{ fontSize:12, fontWeight:700 }}>{coName}</span>
+                      <span style={{ fontSize:11, color:C.muted, fontVariantNumeric:"tabular-nums" }}>
+                        {parties.reduce((s,p)=>s+(partyPost[p]||0),0)} seats
+                      </span>
+                    </div>
+                    {parties.map(p => {
+                      const base = PARTY_BASE[p]||0;
+                      const cur  = partyPost[p]||0;
+                      const d    = cur - base;
+                      return <PartyBlock key={p} name={p} seats={cur} delta={d} color={PARTY_COLOR[p]||C.muted} maxSeats={maxSeats} />;
+                    })}
                   </div>
-                  {parties.map(p => {
-                    const base = PARTY_BASE[p]||0;
-                    const cur  = partyPost[p]||0;
-                    const d    = cur - base;
-                    return <PartyBlock key={p} name={p} seats={cur} delta={d} color={PARTY_COLOR[p]||C.muted} />;
-                  })}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 
