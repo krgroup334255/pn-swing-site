@@ -276,8 +276,8 @@ function computeResults(ms, cs, is) {
     base[coalition] = (base[coalition]||0) + 1;
     if (!SWING_STATES.has(state)) continue;
     const net = (ms*mPct + cs*cPct + is*iPct) / 100;
-    if (coalition !== "PN") { if (net > margin/2)  toPN.push({code,coalition,party}); }
-    else                    { if (-net > margin/2) fromPN.push({code,coalition,party}); }
+    if (coalition !== "PN") { if (net > margin/2)  toPN.push({code,state,coalition,party}); }
+    else                    { if (-net > margin/2) fromPN.push({code,state,coalition,party}); }
   }
   return { base, toPN, fromPN };
 }
@@ -660,12 +660,16 @@ export default function App() {
   const toPNSet   = new Set(toPN.map(f => f.code));
   const fromPNSet = new Set(fromPN.map(f => f.code));
 
+  // States where PAS is the dominant PN component (gains attributed to PAS)
+  const PAS_STATES = new Set(["Kelantan","Terengganu","Kedah","Perlis"]);
+
   const post     = { ...base };
   const partyPost = { ...PARTY_BASE };
-  for (const { coalition, party } of toPN) {
+  for (const { coalition, party, state } of toPN) {
     post[coalition]--; post.PN = (post.PN||0) + 1;
     if (partyPost[party] !== undefined) partyPost[party]--;
-    partyPost["Bersatu"]++;
+    // Attribute gain to PAS in its heartland states, Bersatu elsewhere
+    partyPost[PAS_STATES.has(state) ? "PAS" : "Bersatu"]++;
   }
   for (const { party } of fromPN) {
     post.PN--; post.PH = (post.PH||0) + 1;
