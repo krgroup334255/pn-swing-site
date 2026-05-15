@@ -1,52 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, ReferenceLine
-} from "recharts";
-
-// ── Design tokens (SaaS / corporate) ────────────────────────────────────────
-const C = {
-  bg:        "#0f1117",
-  surface:   "#1a1d27",
-  panel:     "#1e2130",
-  border:    "#2a2d3e",
-  borderHi:  "#3d4166",
-  text:      "#e8eaf0",
-  muted:     "#8b8fa8",
-  subtle:    "#555875",
-  red:       "#ef4444",
-  redDim:    "#7f1d1d",
-  blue:      "#3b82f6",
-  blueDim:   "#1e3a5f",
-  green:     "#22c55e",
-  greenDim:  "#14532d",
-  amber:     "#f59e0b",
-  amberDim:  "#78350f",
-  purple:    "#a855f7",
-  purpleDim: "#4c1d95",
-  teal:      "#14b8a6",
-  white:     "#ffffff",
-  // coalition colours
-  pnRed:     "#dc2626",
-  phBlue:    "#2563eb",
-  bnYellow:  "#d97706",
-  gpsGreen:  "#16a34a",
-  grsTeal:   "#0d9488",
-  warPurple: "#9333ea",
-  indGray:   "#6b7280",
-};
-
-const FONT = "'Inter','Segoe UI',system-ui,sans-serif";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import "./App.css";
 
 // ── GE-15 Parliament constituency data ──────────────────────────────────────
 // [code, state, coalition, party, marginPct, malay%, chinese%, indian%]
-// party = individual party within coalition
 const SEATS = [
-  // Perlis
   ["P.001","Perlis","PN","Bersatu",27.63,86.01,8.14,0.88],
   ["P.002","Perlis","PN","PAS",16.36,81.58,14.73,1.57],
   ["P.003","Perlis","PN","Bersatu",49.62,87.23,7.81,1.59],
-  // Kedah
   ["P.004","Kedah","PN","PAS",28.47,89.65,6.75,2.38],
   ["P.005","Kedah","PN","PAS",39.18,90.75,6.78,0.11],
   ["P.006","Kedah","PN","Bersatu",37.87,85.99,8.72,3.38],
@@ -62,7 +23,6 @@ const SEATS = [
   ["P.016","Kedah","PN","Bersatu",26.72,89.24,4.27,4.63],
   ["P.017","Kedah","PN","PAS",17.79,62.18,17.75,19.36],
   ["P.018","Kedah","PN","Bersatu",18.57,69.73,17.19,12.53],
-  // Kelantan
   ["P.019","Kelantan","PN","PAS",33.24,92.28,3.64,0.14],
   ["P.020","Kelantan","PN","PAS",49.21,96.96,1.85,0.12],
   ["P.021","Kelantan","PN","PAS",28.98,84.33,13.75,0.76],
@@ -77,7 +37,6 @@ const SEATS = [
   ["P.030","Kelantan","PN","PAS",29.02,97.72,0.18,0.12],
   ["P.031","Kelantan","PN","PAS",38.94,94.12,4.11,1.12],
   ["P.032","Kelantan","PN","Bersatu",0.34,78.55,5.81,0.47],
-  // Terengganu
   ["P.033","Terengganu","PN","PAS",21.87,97.97,1.30,0.09],
   ["P.034","Terengganu","PN","PAS",22.43,99.23,0.28,0.04],
   ["P.035","Terengganu","PN","PAS",33.97,98.38,1.05,0.09],
@@ -86,7 +45,6 @@ const SEATS = [
   ["P.038","Terengganu","PN","PAS",21.85,98.82,0.43,0.04],
   ["P.039","Terengganu","PN","PAS",37.37,95.71,3.16,0.19],
   ["P.040","Terengganu","PN","Bersatu",24.03,93.17,5.06,0.53],
-  // Pulau Pinang
   ["P.041","P. Pinang","PN","Bersatu",4.14,79.90,15.50,4.17],
   ["P.042","P. Pinang","PN","Bersatu",18.26,77.93,15.08,6.35],
   ["P.043","P. Pinang","PH","DAP",72.32,14.51,69.32,15.63],
@@ -100,7 +58,6 @@ const SEATS = [
   ["P.051","P. Pinang","PH","DAP",73.32,14.64,71.69,12.83],
   ["P.052","P. Pinang","PH","DAP",38.91,38.77,47.85,12.18],
   ["P.053","P. Pinang","PH","PKR",2.48,65.23,29.05,4.83],
-  // Perak
   ["P.054","Perak","PN","Bersatu",3.98,66.84,13.51,3.03],
   ["P.055","Perak","BN","UMNO",3.18,83.21,11.80,1.38],
   ["P.056","Perak","PN","Bersatu",22.36,89.94,3.92,5.62],
@@ -125,7 +82,6 @@ const SEATS = [
   ["P.075","Perak","BN","UMNO",0.83,56.44,20.44,21.60],
   ["P.076","Perak","PH","PKR",23.63,41.88,38.36,18.69],
   ["P.077","Perak","PH","Amanah",5.08,54.96,23.65,13.00],
-  // Pahang
   ["P.078","Pahang","BN","UMNO",13.66,30.97,27.15,12.19],
   ["P.079","Pahang","BN","UMNO",17.06,78.23,14.76,4.99],
   ["P.080","Pahang","PH","DAP",7.75,52.06,36.59,6.19],
@@ -140,7 +96,6 @@ const SEATS = [
   ["P.089","Pahang","PH","PKR",1.04,49.25,37.99,9.09],
   ["P.090","Pahang","BN","UMNO",28.04,62.04,27.82,3.66],
   ["P.091","Pahang","PN","PAS",2.15,83.29,2.43,0.89],
-  // Selangor
   ["P.092","Selangor","PN","Bersatu",12.34,81.32,13.05,4.88],
   ["P.093","Selangor","PN","Bersatu",5.33,67.33,29.33,2.10],
   ["P.094","Selangor","PN","Bersatu",1.28,62.81,18.14,15.13],
@@ -163,7 +118,6 @@ const SEATS = [
   ["P.111","Selangor","PH","PKR",37.42,39.81,29.68,27.34],
   ["P.112","Selangor","PN","Bersatu",1.48,54.86,23.76,17.28],
   ["P.113","Selangor","PH","PKR",6.49,62.92,19.15,13.14],
-  // WP KL
   ["P.114","WP KL","PH","DAP",84.46,5.62,85.51,7.08],
   ["P.115","WP KL","PH","PKR",25.52,44.05,34.57,18.18],
   ["P.116","WP KL","PH","PKR",22.32,57.71,28.51,9.11],
@@ -175,9 +129,7 @@ const SEATS = [
   ["P.122","WP KL","PH","DAP",76.83,12.06,76.78,8.96],
   ["P.123","WP KL","PH","DAP",75.89,13.44,77.09,7.77],
   ["P.124","WP KL","PH","PKR",10.55,61.99,26.94,8.77],
-  // WP Putrajaya
   ["P.125","WP Putrajaya","PN","Bersatu",6.30,93.85,0.89,2.78],
-  // N. Sembilan
   ["P.126","N. Sembilan","BN","UMNO",17.92,65.12,23.33,5.49],
   ["P.127","N. Sembilan","BN","UMNO",8.16,63.63,22.01,12.74],
   ["P.128","N. Sembilan","PH","PKR",25.02,51.29,31.90,13.93],
@@ -186,14 +138,12 @@ const SEATS = [
   ["P.131","N. Sembilan","BN","UMNO",18.18,73.49,8.86,15.94],
   ["P.132","N. Sembilan","PH","DAP",29.85,43.60,31.87,21.41],
   ["P.133","N. Sembilan","BN","UMNO",2.09,61.93,23.66,12.28],
-  // Melaka
   ["P.134","Melaka","PN","Bersatu",8.06,81.95,11.74,3.64],
   ["P.135","Melaka","PH","PKR",1.22,61.39,23.78,13.07],
   ["P.136","Melaka","PN","Bersatu",9.62,69.28,22.29,3.65],
   ["P.137","Melaka","PH","DAP",9.14,61.73,30.62,6.04],
   ["P.138","Melaka","PH","DAP",37.68,38.98,54.17,4.46],
   ["P.139","Melaka","PN","Bersatu",0.41,73.29,15.50,10.12],
-  // Johor
   ["P.140","Johor","PH","DAP",11.19,46.70,42.64,9.32],
   ["P.141","Johor","PH","DAP",3.59,57.76,36.58,4.07],
   ["P.142","Johor","PH","DAP",8.15,37.55,43.75,15.36],
@@ -220,7 +170,6 @@ const SEATS = [
   ["P.163","Johor","PH","DAP",31.26,36.96,49.21,11.58],
   ["P.164","Johor","BN","UMNO",10.13,68.25,28.03,1.06],
   ["P.165","Johor","BN","MIC",11.65,57.02,40.05,1.02],
-  // Sabah
   ["P.167","Sabah","IND","IND",4.36,4.17,7.06,0.12],
   ["P.168","Sabah","IND","IND",16.37,2.66,2.01,0.08],
   ["P.169","Sabah","IND","IND",8.48,2.92,1.12,0.20],
@@ -246,7 +195,6 @@ const SEATS = [
   ["P.189","Sabah","IND","IND",53.48,6.60,1.52,0.14],
   ["P.190","Sabah","GRS","GRS",7.50,33.96,29.52,0.38],
   ["P.191","Sabah","BN","UMNO",18.19,49.17,8.37,0.36],
-  // Sarawak — GPS held
   ["P.192","Sarawak","PH","PKR",17.46,5.14,17.08,0.18],
   ["P.193","Sarawak","GPS","PBB",74.66,78.03,7.92,0.09],
   ["P.194","Sarawak","GPS","PBB",59.81,69.37,13.41,0.59],
@@ -278,33 +226,19 @@ const SEATS = [
   ["P.220","Sarawak","GPS","PBB",24.64,4.52,7.44,0.04],
   ["P.221","Sarawak","GPS","PBB",50.51,25.82,17.48,0.10],
   ["P.222","Sarawak","GPS","PBB",31.18,35.90,9.42,0.12],
-  // Warisan seats (Sabah — listed as 3 seats; split across IND entries above for model consistency)
-  // Note: Warisan contested and won 3 seats, tracked separately in PARTY_BASE
 ];
 
-// Peninsular + WP swing states
 const SWING_STATES = new Set([
   "Perlis","Kedah","Kelantan","Terengganu","P. Pinang","Perak",
   "Pahang","Selangor","WP KL","WP Putrajaya","N. Sembilan","Melaka","Johor"
 ]);
 
-// GE-15 base seats by party (official results)
 const PARTY_BASE = {
-  // PN
-  PAS:     43, Bersatu: 31,
-  // PH
-  DAP:     40, PKR: 31, Amanah: 8, UPKO: 1,
-  // BN
-  UMNO:    26, MCA: 2, MIC: 2,
-  // GPS
-  PBB:     14, SUPP: 3, PRS: 4, PDP: 2,
-  // GRS
-  PBS:     3, GRS: 3,
-  // Others
-  Warisan: 3, IND: 5,
+  PAS:43, Bersatu:31, DAP:40, PKR:31, Amanah:8, UPKO:1,
+  UMNO:26, MCA:2, MIC:2, PBB:14, SUPP:3, PRS:4, PDP:2,
+  PBS:3, GRS:3, Warisan:3, IND:5,
 };
 
-// Coalition membership (for builder)
 const COALITION_PARTIES = {
   PN:      ["PAS","Bersatu"],
   PH:      ["PKR","DAP","Amanah","UPKO"],
@@ -315,246 +249,195 @@ const COALITION_PARTIES = {
   IND:     ["IND"],
 };
 
-const COALITION_COLOR = {
-  PN: C.pnRed, PH: C.phBlue, BN: C.bnYellow,
-  GPS: C.gpsGreen, GRS: C.grsTeal, Warisan: C.warPurple, IND: C.indGray,
-};
-
+const CO_COLOR = { PN:"#ef4444", PH:"#3b82f6", BN:"#f59e0b", GPS:"#22c55e", GRS:"#14b8a6", Warisan:"#a855f7", IND:"#71717a" };
 const PARTY_COLOR = {
-  PAS: "#b91c1c", Bersatu: "#ef4444",
-  PKR: "#1d4ed8", DAP: "#dc2626", Amanah: "#60a5fa", UPKO: "#93c5fd",
-  UMNO: "#d97706", MCA: "#fbbf24", MIC: "#fde68a",
-  PBB: "#15803d", SUPP: "#4ade80", PRS: "#86efac", PDP: "#bbf7d0",
-  PBS: "#0f766e", GRS: "#2dd4bf",
-  Warisan: "#9333ea", IND: "#6b7280",
+  PAS:"#b91c1c", Bersatu:"#ef4444",
+  PKR:"#1d4ed8", DAP:"#dc2626", Amanah:"#60a5fa", UPKO:"#93c5fd",
+  UMNO:"#d97706", MCA:"#fbbf24", MIC:"#fde68a",
+  PBB:"#15803d", SUPP:"#4ade80", PRS:"#86efac", PDP:"#bbf7d0",
+  PBS:"#0f766e", GRS:"#2dd4bf", Warisan:"#9333ea", IND:"#6b7280",
 };
 
-// DUN static data
 const DUN = {"10":{"pre":{"PN":209,"PH":131,"BN":112,"ALONE":37,"GRS":29},"post":{"PN":266,"PH":111,"BN":76,"ALONE":36,"GRS":29},"gainer":{"co":"PN","d":57},"loser":{"co":"BN","d":-36},"states":{"Perlis":{"t":15,"o":14,"f":0,"m":8,"g":true},"Kedah":{"t":36,"o":33,"f":2,"m":19,"g":true},"Kelantan":{"t":45,"o":43,"f":2,"m":23,"g":true},"Terengganu":{"t":32,"o":32,"f":0,"m":17,"g":true},"P. Pinang":{"t":40,"o":11,"f":2,"m":21,"g":false},"Perak":{"t":59,"o":26,"f":10,"m":30,"g":true},"Pahang":{"t":42,"o":17,"f":11,"m":22,"g":true},"Selangor":{"t":56,"o":22,"f":8,"m":29,"g":true},"N. Sembilan":{"t":36,"o":5,"f":13,"m":19,"g":false},"Melaka":{"t":28,"o":2,"f":4,"m":15,"g":false},"Johor":{"t":56,"o":3,"f":4,"m":29,"g":false},"Sabah":{"t":73,"o":1,"f":1,"m":37,"g":false},"Sarawak":{"t":82,"o":0,"f":0,"m":42,"g":false,"gps":true}},"govt_count":7},"15":{"pre":{"PN":209,"PH":131,"BN":112,"ALONE":37,"GRS":29},"post":{"PN":297,"PH":102,"BN":57,"ALONE":36,"GRS":26},"gainer":{"co":"PN","d":88},"loser":{"co":"BN","d":-55},"states":{"Perlis":{"t":15,"o":14,"f":1,"m":8,"g":true},"Kedah":{"t":36,"o":33,"f":2,"m":19,"g":true},"Kelantan":{"t":45,"o":43,"f":2,"m":23,"g":true},"Terengganu":{"t":32,"o":32,"f":0,"m":17,"g":true},"P. Pinang":{"t":40,"o":11,"f":4,"m":21,"g":false},"Perak":{"t":59,"o":26,"f":10,"m":30,"g":true},"Pahang":{"t":42,"o":17,"f":13,"m":22,"g":true},"Selangor":{"t":56,"o":22,"f":14,"m":29,"g":true},"N. Sembilan":{"t":36,"o":5,"f":14,"m":19,"g":true},"Melaka":{"t":28,"o":2,"f":13,"m":15,"g":true},"Johor":{"t":56,"o":3,"f":11,"m":29,"g":false},"Sabah":{"t":73,"o":1,"f":4,"m":37,"g":false},"Sarawak":{"t":82,"o":0,"f":0,"m":42,"g":false,"gps":true}},"govt_count":9},"20":{"pre":{"PN":209,"PH":131,"BN":112,"ALONE":37,"GRS":29},"post":{"PN":324,"PH":95,"BN":41,"ALONE":33,"GRS":25},"gainer":{"co":"PN","d":115},"loser":{"co":"BN","d":-71},"states":{"Perlis":{"t":15,"o":14,"f":1,"m":8,"g":true},"Kedah":{"t":36,"o":33,"f":2,"m":19,"g":true},"Kelantan":{"t":45,"o":43,"f":2,"m":23,"g":true},"Terengganu":{"t":32,"o":32,"f":0,"m":17,"g":true},"P. Pinang":{"t":40,"o":11,"f":4,"m":21,"g":false},"Perak":{"t":59,"o":26,"f":12,"m":30,"g":true},"Pahang":{"t":42,"o":17,"f":16,"m":22,"g":true},"Selangor":{"t":56,"o":22,"f":17,"m":29,"g":true},"N. Sembilan":{"t":36,"o":5,"f":17,"m":19,"g":true},"Melaka":{"t":28,"o":2,"f":16,"m":15,"g":true},"Johor":{"t":56,"o":3,"f":19,"m":29,"g":false},"Sabah":{"t":73,"o":1,"f":9,"m":37,"g":false},"Sarawak":{"t":82,"o":0,"f":0,"m":42,"g":false,"gps":true}},"govt_count":9},"25":{"pre":{"PN":209,"PH":131,"BN":112,"ALONE":37,"GRS":29},"post":{"PN":353,"PH":88,"BN":27,"ALONE":29,"GRS":21},"gainer":{"co":"PN","d":144},"loser":{"co":"BN","d":-85},"states":{"Perlis":{"t":15,"o":14,"f":1,"m":8,"g":true},"Kedah":{"t":36,"o":33,"f":3,"m":19,"g":true},"Kelantan":{"t":45,"o":43,"f":2,"m":23,"g":true},"Terengganu":{"t":32,"o":32,"f":0,"m":17,"g":true},"P. Pinang":{"t":40,"o":11,"f":4,"m":21,"g":false},"Perak":{"t":59,"o":26,"f":14,"m":30,"g":true},"Pahang":{"t":42,"o":17,"f":19,"m":22,"g":true},"Selangor":{"t":56,"o":22,"f":17,"m":29,"g":true},"N. Sembilan":{"t":36,"o":5,"f":19,"m":19,"g":true},"Melaka":{"t":28,"o":2,"f":17,"m":15,"g":true},"Johor":{"t":56,"o":3,"f":30,"m":29,"g":true},"Sabah":{"t":73,"o":1,"f":18,"m":37,"g":false},"Sarawak":{"t":82,"o":0,"f":0,"m":42,"g":false,"gps":true}},"govt_count":10},"30":{"pre":{"PN":209,"PH":131,"BN":112,"ALONE":37,"GRS":29},"post":{"PN":387,"PH":80,"BN":16,"GRS":15,"ALONE":20},"gainer":{"co":"PN","d":178},"loser":{"co":"BN","d":-96},"states":{"Perlis":{"t":15,"o":14,"f":1,"m":8,"g":true},"Kedah":{"t":36,"o":33,"f":3,"m":19,"g":true},"Kelantan":{"t":45,"o":43,"f":2,"m":23,"g":true},"Terengganu":{"t":32,"o":32,"f":0,"m":17,"g":true},"P. Pinang":{"t":40,"o":11,"f":4,"m":21,"g":false},"Perak":{"t":59,"o":26,"f":15,"m":30,"g":true},"Pahang":{"t":42,"o":17,"f":21,"m":22,"g":true},"Selangor":{"t":56,"o":22,"f":18,"m":29,"g":true},"N. Sembilan":{"t":36,"o":5,"f":22,"m":19,"g":true},"Melaka":{"t":28,"o":2,"f":19,"m":15,"g":true},"Johor":{"t":56,"o":3,"f":38,"m":29,"g":true},"Sabah":{"t":73,"o":1,"f":35,"m":37,"g":false},"Sarawak":{"t":82,"o":0,"f":0,"m":42,"g":false,"gps":true}},"govt_count":10}};
 
 function snapDunSwing(v) {
   const steps = [10,15,20,25,30];
-  const abs = Math.abs(v);
-  return String(steps.reduce((a,b) => Math.abs(b-abs) < Math.abs(a-abs) ? b : a));
+  return String(steps.reduce((a,b) => Math.abs(b-Math.abs(v)) < Math.abs(a-Math.abs(v)) ? b : a));
 }
 
-// ── Swing model ──────────────────────────────────────────────────────────────
-function computeResults(malaySwing, chineseSwing, indianSwing) {
+function computeResults(ms, cs, is) {
   const base = { PN:0, PH:0, BN:0, GPS:0, GRS:0, IND:0 };
-  const partyBase = { ...PARTY_BASE };
-  const flippedToPN = [], flippedFromPN = [];
-
-  for (const [code, state, coalition, party, marginPct, mPct, cPct, iPct] of SEATS) {
+  const toPN = [], fromPN = [];
+  for (const [code, state, coalition, party, margin, mPct, cPct, iPct] of SEATS) {
     base[coalition] = (base[coalition]||0) + 1;
     if (!SWING_STATES.has(state)) continue;
-    const netToPN = (malaySwing*mPct + chineseSwing*cPct + indianSwing*iPct) / 100;
-    if (coalition !== "PN") {
-      if (netToPN > marginPct/2) flippedToPN.push({ code, coalition, party });
-    } else {
-      if (-netToPN > marginPct/2) flippedFromPN.push({ code, coalition, party });
-    }
+    const net = (ms*mPct + cs*cPct + is*iPct) / 100;
+    if (coalition !== "PN") { if (net > margin/2)  toPN.push({code,coalition,party}); }
+    else                    { if (-net > margin/2) fromPN.push({code,coalition,party}); }
   }
-  return { base, flippedToPN, flippedFromPN };
+  return { base, toPN, fromPN };
 }
 
-// ── CSS keyframes injected once ───────────────────────────────────────────────
-const STYLE = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: ${C.bg}; }
-input[type=range] { -webkit-appearance: none; height: 4px; border-radius: 2px; outline: none; cursor: pointer; }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; cursor: pointer; border: 2px solid ${C.bg}; }
-input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: ${C.blue}; }
-@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-@keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.6; } }
-@keyframes confettiBounce { 0%,100%{transform:translateY(0) rotate(0deg);} 25%{transform:translateY(-8px) rotate(3deg);} 75%{transform:translateY(-4px) rotate(-2deg);} }
-@keyframes slideIn { from { transform:scaleX(0); } to { transform:scaleX(1); } }
-.card { background:${C.panel}; border:1px solid ${C.border}; border-radius:8px; }
-.tag { display:inline-flex; align-items:center; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:600; letter-spacing:.3px; }
-`;
+// ── Small reusable components ────────────────────────────────────────────────
 
-// ── Sub-components ────────────────────────────────────────────────────────────
-
-function Slider({ label, value, onChange, color, min=-60, max=60 }) {
-  const pct = ((value - min) / (max - min)) * 100;
+function RaceSlider({ label, value, onChange, color }) {
+  const pct = ((value + 60) / 120) * 100;
+  const vc = value > 0 ? "pos" : value < 0 ? "neg" : "zero";
   return (
-    <div style={{ marginBottom: 14 }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <div style={{ width:8, height:8, borderRadius:"50%", background:color }} />
-          <span style={{ fontSize:12, fontWeight:600, color:C.text }}>{label}</span>
+    <div className="slider-row">
+      <div className="slider-header">
+        <div className="slider-label">
+          <div className="slider-dot" style={{ background: color }} />
+          {label}
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:11, color:C.muted }}>Swing to PN</span>
-          <span style={{
-            fontSize:13, fontWeight:700, minWidth:50, textAlign:"right",
-            color: value > 0 ? C.green : value < 0 ? C.red : C.muted,
-            fontVariantNumeric:"tabular-nums"
-          }}>
-            {value > 0 ? `+${value}%` : `${value}%`}
-          </span>
-        </div>
+        <span className={`slider-value ${vc}`}>
+          {value > 0 ? `+${value}%` : `${value}%`}
+        </span>
       </div>
-      <div style={{ position:"relative", height:20, display:"flex", alignItems:"center" }}>
-        <div style={{ position:"absolute", left:"50%", top:0, bottom:0, width:1, background:C.border, zIndex:1 }} />
+      <div className="slider-track">
+        <div className="slider-midline" />
         <input
-          type="range" min={min} max={max} step={1} value={value}
+          type="range" min={-60} max={60} step={1} value={value}
           onChange={e => onChange(Number(e.target.value))}
-          style={{ width:"100%", background:`linear-gradient(to right, ${C.border} 0%, ${color} ${pct}%, ${C.border} ${pct}%)`, position:"relative", zIndex:2, accentColor:color }}
+          style={{ background: `linear-gradient(to right, var(--border) 0%, ${color} ${pct}%, var(--border) ${pct}%)`, accentColor: color }}
         />
       </div>
-      <div style={{ display:"flex", justifyContent:"space-between", fontSize:9, color:C.subtle, marginTop:3, fontVariantNumeric:"tabular-nums" }}>
-        <span>−60%</span><span>0</span><span>+60%</span>
+      <div className="slider-scale"><span>−60%</span><span>0</span><span>+60%</span></div>
+    </div>
+  );
+}
+
+const GIFS = {
+  fireworks: "https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif",
+  crowd:     "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+};
+
+function Banner({ pn }) {
+  const maj = pn >= 112, close = pn >= 102 && pn < 112;
+  const cls = maj ? "majority" : close ? "close" : "short";
+  const color = maj ? "var(--green)" : close ? "var(--amber)" : "var(--red)";
+  const label = maj ? "✓ Majority achieved" : close ? "⚡ Within striking distance" : "✗ Short of majority";
+  const sub = maj
+    ? `${pn - 112} seats above the 112-seat threshold`
+    : `${112 - pn} seat${112-pn!==1?"s":""} needed to form government`;
+  const gif = maj ? GIFS.fireworks : close ? GIFS.crowd : null;
+  return (
+    <div className={`banner ${cls}`}>
+      <div className="banner-body">
+        <div className="banner-status" style={{ color }}>{label}</div>
+        <div className="banner-number" style={{ color }}>{pn}</div>
+        <div className="banner-sub">{sub} · 222 total seats</div>
       </div>
-    </div>
-  );
-}
-
-function SeatMeter({ pn, total=222, maj=112, gained }) {
-  const heldPct  = ((pn - gained) / total) * 100;
-  const gainPct  = (gained / total) * 100;
-  const majPct   = (maj / total) * 100;
-  return (
-    <div style={{ position:"relative", height:10, background:C.surface, borderRadius:5, overflow:"hidden" }}>
-      <div style={{ position:"absolute", left:0, height:"100%", width:`${heldPct}%`, background:C.pnRed, borderRadius:"5px 0 0 5px", transition:"width .4s ease" }} />
-      <div style={{ position:"absolute", left:`${heldPct}%`, height:"100%", width:`${gainPct}%`, background:"#fb923c", transition:"all .4s ease" }} />
-      <div style={{ position:"absolute", left:`${majPct}%`, top:-2, bottom:-2, width:2, background:C.white, zIndex:3, borderRadius:1 }} />
-    </div>
-  );
-}
-
-function StatCard({ value, label, sub, color, size=28 }) {
-  return (
-    <div className="card" style={{ padding:"14px 16px", borderTop:`3px solid ${color}` }}>
-      <div style={{ fontSize:size, fontWeight:800, color, fontVariantNumeric:"tabular-nums", lineHeight:1 }}>{value}</div>
-      <div style={{ fontSize:11, fontWeight:600, color:C.text, marginTop:4 }}>{label}</div>
-      {sub && <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{sub}</div>}
-    </div>
-  );
-}
-
-function PartyBlock({ name, seats, delta, color, maxSeats }) {
-  const pct = maxSeats > 0 ? Math.min(seats / maxSeats * 100, 100) : 0;
-  return (
-    <div style={{ display:"flex", alignItems:"center", gap:8, padding:"5px 0", borderBottom:`1px solid ${C.border}` }}>
-      <div style={{ width:3, height:20, background:color, borderRadius:2, flexShrink:0 }} />
-      <span style={{ fontSize:11, fontWeight:600, color:C.text, width:52 }}>{name}</span>
-      <div style={{ flex:1, height:4, background:C.surface, borderRadius:2, overflow:"hidden" }}>
-        <div style={{ height:"100%", width:`${pct}%`, background:color, borderRadius:2, transition:"width .4s ease" }} />
-      </div>
-      <span style={{ fontSize:12, fontWeight:700, color:C.text, minWidth:24, textAlign:"right", fontVariantNumeric:"tabular-nums" }}>{seats}</span>
-      {delta !== 0 && (
-        <span style={{ fontSize:10, fontWeight:600, color: delta>0 ? C.green : C.red, minWidth:28, textAlign:"right", fontVariantNumeric:"tabular-nums" }}>
-          {delta>0?`+${delta}`:delta}
-        </span>
+      {gif && (
+        <div className="banner-gif">
+          <img src={gif} alt="" />
+        </div>
       )}
     </div>
   );
 }
 
-// GIF urls (giphy embed links — use embed not share for CORS)
-const GIFS = {
-  fireworks: "https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif",
-  crowd:     "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
-  winning:   "https://media.giphy.com/media/3oz8xRF0v9WMAUVLNK/giphy.gif",
-  short:     "https://media.giphy.com/media/3o7TKtnuHOHHUjR38Y/giphy.gif",
-  lose:      "https://media.giphy.com/media/l1J9EdzfOSgfyueLm/giphy.gif",
-};
-
-function MajorityBanner({ pn, maj=112 }) {
-  const hasMaj = pn >= maj;
-  const closeMaj = pn >= maj-10 && pn < maj;
-  const shortfall = maj - pn;
-  const [gif, setGif] = useState(null);
-
-  useEffect(() => {
-    if (hasMaj) setGif(GIFS.fireworks);
-    else if (closeMaj) setGif(GIFS.crowd);
-    else setGif(null);
-  }, [hasMaj, closeMaj]);
-
+function CoTable({ coalitions, base, post, gainerCo, loserCo }) {
   return (
-    <div className="card" style={{
-      overflow:"hidden", borderColor: hasMaj ? C.green : closeMaj ? C.amber : C.border,
-      borderTop:`3px solid ${hasMaj ? C.green : closeMaj ? C.amber : C.red}`,
-      animation:"fadeIn .4s ease", marginBottom:16
-    }}>
-      <div style={{ display:"flex", gap:0 }}>
-        <div style={{ flex:1, padding:"16px 18px" }}>
-          <div style={{ fontSize:10, fontWeight:600, letterSpacing:1, textTransform:"uppercase", color: hasMaj ? C.green : closeMaj ? C.amber : C.red, marginBottom:6 }}>
-            {hasMaj ? "✓ MAJORITY ACHIEVED" : closeMaj ? "⚡ WITHIN STRIKING DISTANCE" : "✗ NO MAJORITY"}
+    <div>
+      {coalitions.map(co => {
+        const pre = base[co]||0, cur = post[co]||0, d = cur - pre;
+        if (!pre && !cur) return null;
+        return (
+          <div key={co} className="co-table-row">
+            <div className="co-stripe" style={{ background: CO_COLOR[co]||"var(--text-subtle)" }} />
+            <span className="co-table-name">{co}</span>
+            {co===gainerCo && <span className="co-table-tag tag-gainer">Gainer</span>}
+            {co===loserCo  && <span className="co-table-tag tag-loser">Loser</span>}
+            <span className="co-table-spacer" />
+            <span className="co-table-pre">{pre}</span>
+            <span className="co-table-arrow">→</span>
+            <span className="co-table-post" style={{ color: d>0?"var(--green)":d<0?"var(--red)":"var(--text-muted)" }}>{cur}</span>
+            <span className="co-table-delta" style={{ color: d>0?"var(--green)":d<0?"var(--red)":"transparent" }}>
+              {d>0?`+${d}`:d<0?d:""}
+            </span>
           </div>
-          <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:8 }}>
-            <span style={{ fontSize:40, fontWeight:800, color: hasMaj ? C.green : closeMaj ? C.amber : C.red, fontVariantNumeric:"tabular-nums" }}>{pn}</span>
-            <span style={{ fontSize:14, color:C.muted }}>/ 222 seats</span>
-          </div>
-          <div style={{ fontSize:11, color:C.muted }}>
-            {hasMaj
-              ? `PN has a working majority — ${pn - maj} seats above threshold`
-              : `PN needs ${shortfall} more seat${shortfall !== 1 ? "s" : ""} to form government`}
-          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function PartyCard({ coName, parties, partyPost }) {
+  const maxSeats = Math.max(...parties.map(p => partyPost[p]||0), 1);
+  const total = parties.reduce((s,p) => s+(partyPost[p]||0), 0);
+  return (
+    <div className="panel" style={{ borderTop: `2px solid ${CO_COLOR[coName]||"var(--border)"}` }}>
+      <div className="panel-full">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+          <span style={{ fontSize:12, fontWeight:700 }}>{coName}</span>
+          <span style={{ fontSize:11, color:"var(--text-muted)", fontVariantNumeric:"tabular-nums" }}>{total} seats</span>
         </div>
-        {gif && (
-          <div style={{ width:140, flexShrink:0, overflow:"hidden", borderLeft:`1px solid ${C.border}` }}>
-            <img src={gif} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-          </div>
-        )}
+        {parties.map(p => {
+          const cur = partyPost[p]||0, base = PARTY_BASE[p]||0, d = cur-base;
+          const pct = maxSeats > 0 ? Math.min(cur/maxSeats*100, 100) : 0;
+          return (
+            <div key={p} className="party-row">
+              <div className="party-stripe" style={{ background: PARTY_COLOR[p]||"var(--text-subtle)" }} />
+              <span className="party-name">{p}</span>
+              <div className="party-bar-track">
+                <div className="party-bar-fill" style={{ width:`${pct}%`, background: PARTY_COLOR[p]||"var(--text-subtle)" }} />
+              </div>
+              <span className="party-seats">{cur}</span>
+              {d !== 0 && (
+                <span className="party-delta" style={{ color: d>0?"var(--green)":"var(--red)" }}>
+                  {d>0?`+${d}`:d}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 function CoalitionBuilder({ partySeats }) {
-  const allParties = Object.keys(PARTY_BASE);
   const [checked, setChecked] = useState(new Set(["PAS","Bersatu"]));
-
-  const toggle = p => setChecked(prev => {
-    const n = new Set(prev);
-    n.has(p) ? n.delete(p) : n.add(p);
-    return n;
-  });
-
-  const totalSeats = [...checked].reduce((s,p) => s + (partySeats[p]||0), 0);
-  const hasMaj = totalSeats >= 112;
-
-  const byCoalition = Object.entries(COALITION_PARTIES);
-
+  const toggle = p => setChecked(prev => { const n=new Set(prev); n.has(p)?n.delete(p):n.add(p); return n; });
+  const total = [...checked].reduce((s,p) => s+(partySeats[p]||0), 0);
+  const hasMaj = total >= 112;
+  const fillW = Math.min(total/222*100, 100);
   return (
-    <div className="card" style={{ padding:"16px 18px" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-        <div>
-          <div style={{ fontSize:13, fontWeight:700, color:C.text }}>Coalition Builder</div>
-          <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>Tick parties to build your own government</div>
-        </div>
-        <div style={{ textAlign:"right" }}>
-          <div style={{ fontSize:28, fontWeight:800, color: hasMaj ? C.green : C.red, fontVariantNumeric:"tabular-nums" }}>{totalSeats}</div>
-          <div style={{ fontSize:9, color: hasMaj ? C.green : C.muted }}>{hasMaj ? "✓ MAJORITY" : `Need ${112-totalSeats} more`}</div>
-        </div>
-      </div>
-
-      {/* majority bar */}
-      <div style={{ height:6, background:C.surface, borderRadius:3, marginBottom:14, overflow:"hidden", position:"relative" }}>
-        <div style={{ height:"100%", width:`${Math.min(totalSeats/222*100,100)}%`, background: hasMaj ? C.green : C.blue, borderRadius:3, transition:"width .3s ease" }} />
-        <div style={{ position:"absolute", left:`${112/222*100}%`, top:-2, bottom:-2, width:2, background:C.white }} />
-      </div>
-
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0 16px" }}>
-        {byCoalition.map(([coName, parties]) => (
-          <div key={coName} style={{ marginBottom:10 }}>
-            <div style={{ fontSize:9, fontWeight:700, letterSpacing:1, textTransform:"uppercase", color:COALITION_COLOR[coName]||C.muted, marginBottom:5 }}>{coName}</div>
-            {parties.map(p => {
-              const seats = partySeats[p] || 0;
-              return (
-                <label key={p} style={{ display:"flex", alignItems:"center", gap:7, marginBottom:4, cursor:"pointer" }}>
-                  <input type="checkbox" checked={checked.has(p)} onChange={() => toggle(p)} />
-                  <div style={{ width:6, height:6, borderRadius:2, background:PARTY_COLOR[p]||C.muted, flexShrink:0 }} />
-                  <span style={{ fontSize:11, color:C.text, flex:1 }}>{p}</span>
-                  <span style={{ fontSize:11, fontWeight:700, color:C.muted, fontVariantNumeric:"tabular-nums" }}>{seats}</span>
-                </label>
-              );
-            })}
+    <div className="panel">
+      <div className="panel-full">
+        <div className="builder-header">
+          <div>
+            <div className="builder-title">Coalition Builder</div>
+            <div className="builder-sub">Select parties to simulate a government</div>
           </div>
-        ))}
+          <div style={{ textAlign:"right" }}>
+            <div className="builder-count" style={{ color: hasMaj?"var(--green)":"var(--red)" }}>{total}</div>
+            <div className="builder-count-sub" style={{ color: hasMaj?"var(--green)":"var(--text-subtle)" }}>
+              {hasMaj ? "✓ Majority" : `${112-total} short`}
+            </div>
+          </div>
+        </div>
+        <div className="builder-progress">
+          <div className="builder-progress-fill"
+            style={{ width:`${fillW}%`, background: hasMaj?"var(--green)":"var(--blue)" }} />
+          <div className="builder-progress-marker" style={{ left:`${112/222*100}%` }} />
+        </div>
+        <div className="builder-grid">
+          {Object.entries(COALITION_PARTIES).map(([coName, parties]) => (
+            <div key={coName} className="builder-group">
+              <div className="builder-group-label" style={{ color: CO_COLOR[coName]||"var(--text-subtle)" }}>{coName}</div>
+              {parties.map(p => (
+                <label key={p} className="builder-party-row">
+                  <input type="checkbox" checked={checked.has(p)} onChange={() => toggle(p)} />
+                  <div className="builder-party-dot" style={{ background: PARTY_COLOR[p]||"var(--text-subtle)" }} />
+                  <span className="builder-party-name">{p}</span>
+                  <span className="builder-party-seats">{partySeats[p]||0}</span>
+                </label>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -562,322 +445,280 @@ function CoalitionBuilder({ partySeats }) {
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [tab, setTab] = useState("parliament");
-  const [subTab, setSubTab] = useState("overview");
-  const [malaySwing, setMalaySwing]     = useState(15);
-  const [chineseSwing, setChineseSwing] = useState(0);
-  const [indianSwing, setIndianSwing]   = useState(0);
+  const [tab, setTab] = useState("overview");
+  const [ms, setMs] = useState(15);
+  const [cs, setCs] = useState(0);
+  const [is, setIs] = useState(0);
 
-  // Inject styles once
-  useEffect(() => {
-    const s = document.createElement("style");
-    s.innerHTML = STYLE;
-    document.head.appendChild(s);
-    return () => document.head.removeChild(s);
-  }, []);
+  const { base, toPN, fromPN } = useMemo(() => computeResults(ms, cs, is), [ms, cs, is]);
 
-  // Live computation
-  const { base, flippedToPN, flippedFromPN } = useMemo(
-    () => computeResults(malaySwing, chineseSwing, indianSwing),
-    [malaySwing, chineseSwing, indianSwing]
-  );
+  const toPNSet   = new Set(toPN.map(f=>f.code));
+  const fromPNSet = new Set(fromPN.map(f=>f.code));
 
-  const flippedToPNSet   = new Set(flippedToPN.map(f=>f.code));
-  const flippedFromPNSet = new Set(flippedFromPN.map(f=>f.code));
-
-  // Post-swing coalition seats
   const post = { ...base };
   const partyPost = { ...PARTY_BASE };
-
-  for (const { code, coalition, party } of flippedToPN) {
-    post[coalition]--; post.PN = (post.PN||0) + 1;
-    if (partyPost[party] !== undefined) partyPost[party]--;
-    // attribute flipped seats to Bersatu (dominant PN seat vehicle in peninsular)
-    partyPost["Bersatu"] = (partyPost["Bersatu"]||0) + 1;
+  for (const { coalition, party } of toPN) {
+    post[coalition]--; post.PN = (post.PN||0)+1;
+    if (partyPost[party]!==undefined) partyPost[party]--;
+    partyPost["Bersatu"]++;
   }
-  for (const { coalition, party } of flippedFromPN) {
-    post.PN--; post.PH = (post.PH||0) + 1;
-    if (partyPost[party] !== undefined) partyPost[party]--;
-    partyPost["PKR"] = (partyPost["PKR"]||0) + 1;
+  for (const { party } of fromPN) {
+    post.PN--; post.PH = (post.PH||0)+1;
+    if (partyPost[party]!==undefined) partyPost[party]--;
+    partyPost["PKR"]++;
   }
 
-  const pnTotal  = post.PN || 0;
-  const pnGained = flippedToPN.length;
-  const pnLost   = flippedFromPN.length;
+  const pnTotal = post.PN||0;
+  const pnGained = toPN.length;
+  const pnLost   = fromPN.length;
   const hasMaj   = pnTotal >= 112;
 
-  // State breakdown for chart
-  const stateMap = {};
-  for (const [code, state, coalition] of SEATS) {
-    if (!SWING_STATES.has(state)) continue;
-    if (!stateMap[state]) stateMap[state] = { held:0, gained:0, other:0 };
-    if (coalition === "PN" && !flippedFromPNSet.has(code)) stateMap[state].held++;
-    else if (flippedToPNSet.has(code)) stateMap[state].gained++;
-    else stateMap[state].other++;
-  }
-  const parlChart = Object.entries(stateMap)
-    .map(([st, v]) => ({
-      name: st.replace("WP KL","KL").replace("WP Putrajaya","Putrajaya").replace("N. Sembilan","N.Semb").replace("P. Pinang","P.Pinang"),
-      held: v.held, gained: v.gained, other: v.other
-    }))
-    .filter(d => d.held + d.gained > 0)
-    .sort((a,b) => (b.held+b.gained)-(a.held+a.gained));
-
-  // Coalitions table
   const coalitions = ["PN","PH","BN","GPS","GRS","IND"];
   let gainerCo="PN", gainerD=0, loserCo="PH", loserD=0;
   for (const co of coalitions) {
-    const d = (post[co]||0) - (base[co]||0);
+    const d = (post[co]||0)-(base[co]||0);
     if (d > gainerD) { gainerD=d; gainerCo=co; }
     if (d < loserD)  { loserD=d;  loserCo=co; }
   }
 
+  // State chart data
+  const stateMap = {};
+  for (const [code, state, coalition] of SEATS) {
+    if (!SWING_STATES.has(state)) continue;
+    if (!stateMap[state]) stateMap[state] = {held:0,gained:0,other:0};
+    if (coalition==="PN" && !fromPNSet.has(code)) stateMap[state].held++;
+    else if (toPNSet.has(code)) stateMap[state].gained++;
+    else stateMap[state].other++;
+  }
+  const chartData = Object.entries(stateMap)
+    .map(([st,v]) => ({
+      name: st.replace("WP KL","KL").replace("WP Putrajaya","Putrajaya")
+               .replace("N. Sembilan","N.Semb").replace("P. Pinang","P.Pinang"),
+      held:v.held, gained:v.gained, other:v.other
+    }))
+    .filter(d => d.held+d.gained > 0)
+    .sort((a,b) => (b.held+b.gained)-(a.held+a.gained));
+
   // DUN
-  const dunSwing = snapDunSwing(malaySwing);
+  const dunSwing = snapDunSwing(ms);
   const dn = DUN[dunSwing];
-  const dunChart = Object.entries(dn.states).map(([st,v]) => ({
+  const dunStates = Object.entries(dn.states).map(([st,v]) => ({
     name: st.replace("P. Pinang","P.Pinang").replace("N. Sembilan","N.Semb"),
-    orig:v.o, flip:v.f, total:v.t, maj:v.m, other:v.t-v.o-v.f, fg:v.g, gps:!!v.gps
+    orig:v.o, flip:v.f, total:v.t, maj:v.m, fg:v.g, gps:!!v.gps
   })).sort((a,b) => a.gps-b.gps || (b.orig+b.flip)/b.total-(a.orig+a.flip)/a.total);
 
-  // Party data for builder (post-swing)
-  const partySeatsForBuilder = { ...partyPost };
+  const tabs = [
+    { k:"overview", l:"Overview" },
+    { k:"parties",  l:"Parties" },
+    { k:"dun",      l:"State DUN" },
+    { k:"builder",  l:"Coalition Builder" },
+  ];
 
-  // ── Render ───────────────────────────────────────────────────────────────
-  const sideW = 260;
+  const heldPct   = ((pnTotal - pnGained) / 222) * 100;
+  const gainedPct = (pnGained / 222) * 100;
+  const majPct    = (112 / 222) * 100;
 
   return (
-    <div style={{ fontFamily:FONT, background:C.bg, color:C.text, minHeight:"100vh", display:"flex", flexDirection:"column" }}>
+    <div className="app">
 
-      {/* ── Top navbar ── */}
-      <header style={{ height:52, background:C.surface, borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", padding:"0 20px", gap:16, flexShrink:0, position:"sticky", top:0, zIndex:100 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <div style={{ width:8, height:8, borderRadius:2, background:C.pnRed, boxShadow:`0 0 8px ${C.pnRed}` }} />
-          <div style={{ width:8, height:8, borderRadius:2, background:C.phBlue }} />
-          <div style={{ width:8, height:8, borderRadius:2, background:C.bnYellow }} />
+      {/* Navbar */}
+      <nav className="navbar">
+        <div className="navbar-logo">
+          <div className="navbar-logo-dots">
+            <div className="dot dot-pn" />
+            <div className="dot dot-ph" />
+            <div className="dot dot-bn" />
+          </div>
+          Malaysia GE-15 · Swing Simulator
         </div>
-        <span style={{ fontSize:13, fontWeight:700, color:C.text, letterSpacing:-.3 }}>Malaysia GE-15 · Swing Simulator</span>
-        <div style={{ flex:1 }} />
-        <span className="tag" style={{ background:C.surface, border:`1px solid ${C.borderHi}`, color:C.muted }}>
-          GE-15 Base · 222 Seats
-        </span>
-        <button
-          onClick={() => { setMalaySwing(0); setChineseSwing(0); setIndianSwing(0); }}
-          style={{ fontSize:11, fontWeight:600, padding:"5px 12px", background:"transparent", border:`1px solid ${C.border}`, borderRadius:5, cursor:"pointer", color:C.muted, fontFamily:FONT }}
-        >
+        <div className="navbar-spacer" />
+        <span className="badge">GE-15 Baseline · 222 Seats</span>
+        <button className="btn" onClick={() => { setMs(0); setCs(0); setIs(0); }}>
           Reset
         </button>
-      </header>
+      </nav>
 
-      <div style={{ display:"flex", flex:1, minHeight:0 }}>
+      <div className="body">
 
-        {/* ── Left sidebar — sliders ── */}
-        <aside style={{ width:sideW, flexShrink:0, background:C.surface, borderRight:`1px solid ${C.border}`, padding:"20px 16px", overflowY:"auto" }}>
-          <div style={{ fontSize:10, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase", color:C.muted, marginBottom:14 }}>Vote Swing to PN</div>
+        {/* Sidebar */}
+        <aside className="sidebar">
+          <div className="sidebar-inner">
+            <div className="sidebar-section-label">Vote swing to PN</div>
 
-          <Slider label="Malay"   value={malaySwing}   onChange={setMalaySwing}   color="#ef4444" />
-          <Slider label="Chinese" value={chineseSwing} onChange={setChineseSwing} color="#3b82f6" />
-          <Slider label="Indian"  value={indianSwing}  onChange={setIndianSwing}  color="#22c55e" />
+            <RaceSlider label="Malay"   value={ms} onChange={setMs} color="#ef4444" />
+            <RaceSlider label="Chinese" value={cs} onChange={setCs} color="#3b82f6" />
+            <RaceSlider label="Indian"  value={is} onChange={setIs} color="#22c55e" />
 
-          <div style={{ fontSize:9, color:C.subtle, lineHeight:1.6, padding:"10px 0", borderTop:`1px solid ${C.border}`, marginTop:4 }}>
-            Positive = swing toward PN<br/>
-            Model: race × voter share per constituency<br/>
-            Peninsular + WP only · ±60% range
-          </div>
-
-          {/* Quick summary in sidebar */}
-          <div style={{ marginTop:16, borderTop:`1px solid ${C.border}`, paddingTop:16 }}>
-            <div style={{ fontSize:10, fontWeight:700, letterSpacing:1.5, textTransform:"uppercase", color:C.muted, marginBottom:10 }}>Live Result</div>
-            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {coalitions.map(co => {
-                const pre = base[co]||0, cur = post[co]||0, d = cur-pre;
-                if (pre===0 && cur===0) return null;
-                return (
-                  <div key={co} style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <div style={{ width:3, height:16, background:COALITION_COLOR[co]||C.muted, borderRadius:2 }} />
-                    <span style={{ fontSize:11, fontWeight:600, color:C.text, width:36 }}>{co}</span>
-                    <div style={{ flex:1, height:3, background:C.border, borderRadius:2, overflow:"hidden" }}>
-                      <div style={{ height:"100%", width:`${cur/222*100}%`, background:COALITION_COLOR[co]||C.muted, transition:"width .3s" }} />
-                    </div>
-                    <span style={{ fontSize:11, fontWeight:700, color:C.text, minWidth:20, textAlign:"right", fontVariantNumeric:"tabular-nums" }}>{cur}</span>
-                    {d!==0 && <span style={{ fontSize:9, color:d>0?C.green:C.red, minWidth:22, textAlign:"right", fontVariantNumeric:"tabular-nums" }}>{d>0?`+${d}`:d}</span>}
-                  </div>
-                );
-              })}
+            <hr className="slider-divider" />
+            <div style={{ fontSize:10, color:"var(--text-subtle)", lineHeight:1.7, marginBottom:16 }}>
+              Positive → toward PN · Negative → away from PN<br/>
+              Model: race-weighted per constituency · Peninsular + WP · ±60%
             </div>
+
+            <div className="sidebar-section-label">Live result</div>
+            {coalitions.map(co => {
+              const pre=base[co]||0, cur=post[co]||0, d=cur-pre;
+              if (!pre && !cur) return null;
+              return (
+                <div key={co} className="live-result-row">
+                  <div className="co-stripe" style={{ background: CO_COLOR[co]||"var(--text-subtle)" }} />
+                  <span className="co-name">{co}</span>
+                  <div className="co-bar-track">
+                    <div className="co-bar-fill" style={{ width:`${cur/222*100}%`, background: CO_COLOR[co]||"var(--text-subtle)" }} />
+                  </div>
+                  <span className="co-seats">{cur}</span>
+                  {d!==0 && <span className={`co-delta ${d>0?"pos":"neg"}`}>{d>0?`+${d}`:d}</span>}
+                </div>
+              );
+            })}
           </div>
         </aside>
 
-        {/* ── Main content ── */}
-        <main style={{ flex:1, overflowY:"auto", padding:"20px 20px 40px" }}>
+        {/* Main */}
+        <main className="main">
+          <div className="main-inner">
 
-          {/* Majority banner */}
-          <MajorityBanner pn={pnTotal} />
+            <Banner pn={pnTotal} />
 
-          {/* Seat meter */}
-          <div className="card" style={{ padding:"14px 18px", marginBottom:16 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-              <span style={{ fontSize:12, fontWeight:600 }}>PN Seat Projection · {pnTotal} / 222</span>
-              <div style={{ display:"flex", gap:10, alignItems:"center", fontSize:10, color:C.muted }}>
-                <span style={{ display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, background:C.pnRed, borderRadius:2, display:"inline-block" }} />Held</span>
-                <span style={{ display:"flex", alignItems:"center", gap:4 }}><span style={{ width:8, height:8, background:"#fb923c", borderRadius:2, display:"inline-block" }} />Gained</span>
-                <span style={{ display:"flex", alignItems:"center", gap:4 }}><span style={{ width:2, height:10, background:C.white, borderRadius:1, display:"inline-block" }} />Majority (112)</span>
+            {/* Seat meter */}
+            <div className="meter-card">
+              <div className="meter-header">
+                <span className="meter-title">PN Seat Projection — {pnTotal} / 222</span>
+                <div className="meter-legend">
+                  <div className="legend-item"><div className="legend-swatch" style={{ background:"#ef4444" }} />Held</div>
+                  <div className="legend-item"><div className="legend-swatch" style={{ background:"#fb923c" }} />Gained</div>
+                  <div className="legend-item"><div className="legend-swatch" style={{ background:"#fff", width:2, height:10, borderRadius:1 }} />Majority (112)</div>
+                </div>
+              </div>
+              <div className="meter-bar">
+                <div className="meter-held"   style={{ width:`${heldPct}%`,   background:"#ef4444" }} />
+                <div className="meter-gained" style={{ left:`${heldPct}%`, width:`${gainedPct}%`, background:"#fb923c" }} />
+                <div className="meter-marker" style={{ left:`${majPct}%` }} />
               </div>
             </div>
-            <SeatMeter pn={pnTotal} gained={pnGained} />
-          </div>
 
-          {/* Stat cards */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:16 }}>
-            <StatCard value={pnTotal}                label="PN Seats"     sub={hasMaj ? `+${pnTotal-112} above maj.` : `${112-pnTotal} short`} color={hasMaj?C.green:C.red} />
-            <StatCard value={`+${pnGained}`}         label="Seats Gained" sub="flipped to PN"    color={C.amber} />
-            <StatCard value={pnLost>0?`-${pnLost}`:"0"} label="Seats Lost" sub="lost from PN"   color={pnLost>0?C.red:C.muted} />
-            <StatCard value={loserD}                  label={`${loserCo} loss`} sub="biggest loser"  color={C.red} />
-          </div>
-
-          {/* Tabs */}
-          <div style={{ display:"flex", gap:2, marginBottom:16, background:C.surface, borderRadius:8, padding:3, border:`1px solid ${C.border}`, width:"fit-content" }}>
-            {[{k:"overview",l:"Overview"},{k:"parties",l:"Parties"},{k:"states",l:"State DUN"},{k:"builder",l:"Coalition Builder"}].map(t => (
-              <button key={t.k} onClick={() => setSubTab(t.k)} style={{
-                padding:"6px 14px", background: subTab===t.k ? C.panel : "transparent",
-                border: subTab===t.k ? `1px solid ${C.borderHi}` : "1px solid transparent",
-                borderRadius:6, cursor:"pointer", fontSize:11, fontWeight:subTab===t.k?700:500,
-                color: subTab===t.k ? C.text : C.muted, fontFamily:FONT, transition:"all .15s"
-              }}>{t.l}</button>
-            ))}
-          </div>
-
-          {/* ── Overview tab ── */}
-          {subTab === "overview" && (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-              {/* Coalition changes */}
-              <div className="card" style={{ padding:"16px 18px" }}>
-                <div style={{ fontSize:12, fontWeight:700, marginBottom:12 }}>Coalition Changes</div>
-                {coalitions.map(co => {
-                  const pre=base[co]||0, cur=post[co]||0, d=cur-pre;
-                  if (pre===0&&cur===0) return null;
-                  return (
-                    <div key={co} style={{ display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom:`1px solid ${C.border}` }}>
-                      <div style={{ width:3, height:18, background:COALITION_COLOR[co]||C.muted, borderRadius:2 }} />
-                      <span style={{ fontSize:12, fontWeight:600, width:40 }}>{co}</span>
-                      {co===gainerCo && <span className="tag" style={{ background:C.greenDim, color:C.green }}>GAINER</span>}
-                      {co===loserCo  && <span className="tag" style={{ background:C.redDim,   color:C.red   }}>LOSER</span>}
-                      <span style={{ flex:1 }} />
-                      <span style={{ fontSize:10, color:C.muted, fontVariantNumeric:"tabular-nums" }}>{pre}</span>
-                      <span style={{ fontSize:10, color:C.subtle }}>→</span>
-                      <span style={{ fontSize:12, fontWeight:700, fontVariantNumeric:"tabular-nums", color:d>0?C.green:d<0?C.red:C.muted }}>{cur}</span>
-                      <span style={{ fontSize:10, fontWeight:600, color:d>0?C.green:d<0?C.red:C.muted, minWidth:30, textAlign:"right", fontVariantNumeric:"tabular-nums" }}>{d>0?`+${d}`:d===0?"":d}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* State chart */}
-              <div className="card" style={{ padding:"16px 18px" }}>
-                <div style={{ fontSize:12, fontWeight:700, marginBottom:12 }}>PN by State (Peninsular + WP)</div>
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={parlChart} layout="vertical" margin={{ left:68, right:8, top:0, bottom:0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                    <XAxis type="number" tick={{ fill:C.muted, fontSize:8, fontFamily:FONT }} />
-                    <YAxis type="category" dataKey="name" tick={{ fill:C.text, fontSize:8, fontFamily:FONT }} width={64} />
-                    <Tooltip
-                      contentStyle={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:6, fontSize:10, fontFamily:FONT }}
-                      formatter={(v,n) => [v, n==="held"?"Held":n==="gained"?"Gained":"Others"]}
-                    />
-                    <Bar dataKey="held"   stackId="a" fill={C.pnRed}  radius={0} />
-                    <Bar dataKey="gained" stackId="a" fill="#fb923c" radius={0} />
-                    <Bar dataKey="other"  stackId="a" fill={C.border} radius={[0,3,3,0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+            {/* Stat row */}
+            <div className="stat-grid">
+              {[
+                { v:pnTotal,                  l:"PN Seats",    s:hasMaj?`+${pnTotal-112} above majority`:`${112-pnTotal} seats short`, c:hasMaj?"var(--green)":"var(--red)" },
+                { v:`+${pnGained}`,            l:"Gained",      s:"flipped to PN",   c:"var(--amber)" },
+                { v:pnLost>0?`-${pnLost}`:"0",l:"Lost",        s:"lost from PN",    c:pnLost>0?"var(--red)":"var(--text-subtle)" },
+                { v:loserD,                    l:`${loserCo}`,  s:"biggest loser",   c:"var(--red)" },
+              ].map((m,i) => (
+                <div key={i} className="stat-card" style={{ borderTopColor:m.c }}>
+                  <div className="stat-value" style={{ color:m.c }}>{m.v}</div>
+                  <div className="stat-label">{m.l}</div>
+                  <div className="stat-sub">{m.s}</div>
+                </div>
+              ))}
             </div>
-          )}
 
-          {/* ── Parties tab ── */}
-          {subTab === "parties" && (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
-              {Object.entries(COALITION_PARTIES).map(([coName, parties]) => {
-                const maxSeats = Math.max(...parties.map(p => partyPost[p]||0), 1);
-                return (
-                  <div key={coName} className="card" style={{ padding:"14px 16px", borderTop:`3px solid ${COALITION_COLOR[coName]||C.border}` }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-                      <span style={{ fontSize:12, fontWeight:700 }}>{coName}</span>
-                      <span style={{ fontSize:11, color:C.muted, fontVariantNumeric:"tabular-nums" }}>
-                        {parties.reduce((s,p)=>s+(partyPost[p]||0),0)} seats
-                      </span>
-                    </div>
-                    {parties.map(p => {
-                      const base = PARTY_BASE[p]||0;
-                      const cur  = partyPost[p]||0;
-                      const d    = cur - base;
-                      return <PartyBlock key={p} name={p} seats={cur} delta={d} color={PARTY_COLOR[p]||C.muted} maxSeats={maxSeats} />;
-                    })}
+            {/* Tab bar */}
+            <div className="tab-bar">
+              {tabs.map(t => (
+                <button key={t.k} className={`tab-btn ${tab===t.k?"active":""}`} onClick={() => setTab(t.k)}>
+                  {t.l}
+                </button>
+              ))}
+            </div>
+
+            {/* Overview */}
+            {tab === "overview" && (
+              <div className="two-col">
+                <div className="panel">
+                  <div className="panel-header">Coalition Changes</div>
+                  <div className="panel-body">
+                    <CoTable coalitions={coalitions} base={base} post={post} gainerCo={gainerCo} loserCo={loserCo} />
                   </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* ── State DUN tab ── */}
-          {subTab === "states" && (
-            <div>
-              <div className="card" style={{ padding:"10px 14px", marginBottom:14, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <span style={{ fontSize:11, color:C.muted }}>DUN follows Malay slider · snapped to nearest model step</span>
-                <span style={{ fontSize:12, fontWeight:700, color:C.pnRed }}>Malay swing: {dunSwing}%</span>
-              </div>
-
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:14 }}>
-                <div className="card" style={{ padding:"12px 14px", borderLeft:`3px solid ${C.green}` }}>
-                  <div style={{ fontSize:9, fontWeight:700, letterSpacing:1, textTransform:"uppercase", color:C.green }}>DUN Gainer</div>
-                  <div style={{ fontSize:18, fontWeight:800, color:C.green, fontVariantNumeric:"tabular-nums" }}>{dn.gainer.co} +{dn.gainer.d}</div>
                 </div>
-                <div className="card" style={{ padding:"12px 14px", borderLeft:`3px solid ${C.red}` }}>
-                  <div style={{ fontSize:9, fontWeight:700, letterSpacing:1, textTransform:"uppercase", color:C.red }}>DUN Loser</div>
-                  <div style={{ fontSize:18, fontWeight:800, color:C.red, fontVariantNumeric:"tabular-nums" }}>{dn.loser.co} {dn.loser.d}</div>
+                <div className="panel">
+                  <div className="panel-header">PN Seats by State</div>
+                  <div className="panel-body">
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart data={chartData} layout="vertical" margin={{ left:62, right:8, top:0, bottom:0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                        <XAxis type="number" tick={{ fill:"var(--text-subtle)", fontSize:9 }} />
+                        <YAxis type="category" dataKey="name" tick={{ fill:"var(--text-muted)", fontSize:9 }} width={58} />
+                        <Tooltip
+                          contentStyle={{ background:"var(--panel-hi)", border:"1px solid var(--border)", borderRadius:6, fontSize:11 }}
+                          formatter={(v,n) => [v, n==="held"?"Held":n==="gained"?"Gained":"Others"]}
+                        />
+                        <Bar dataKey="held"   stackId="a" fill="#ef4444" />
+                        <Bar dataKey="gained" stackId="a" fill="#fb923c" />
+                        <Bar dataKey="other"  stackId="a" fill="var(--border)" radius={[0,3,3,0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </div>
+            )}
 
-              <div style={{ display:"grid", gap:8 }}>
-                {dunChart.map(d => {
+            {/* Parties */}
+            {tab === "parties" && (
+              <div className="two-col">
+                {Object.entries(COALITION_PARTIES).map(([coName, parties]) => (
+                  <PartyCard key={coName} coName={coName} parties={parties} partyPost={partyPost} />
+                ))}
+              </div>
+            )}
+
+            {/* State DUN */}
+            {tab === "dun" && (
+              <div className="content-stack">
+                <div className="dun-info">
+                  <span className="dun-info-text">DUN follows Malay slider · snapped to nearest model step (10/15/20/25/30%)</span>
+                  <span className="dun-swing-label" style={{ color:"var(--pn)" }}>Malay {dunSwing}%</span>
+                </div>
+                <div className="two-col" style={{ marginBottom:4 }}>
+                  {[
+                    { label:"DUN Gainer", val:`${dn.gainer.co} +${dn.gainer.d}`, c:"var(--green)" },
+                    { label:"DUN Loser",  val:`${dn.loser.co} ${dn.loser.d}`,    c:"var(--red)"   },
+                  ].map(m => (
+                    <div key={m.label} className="stat-card" style={{ borderTopColor:m.c }}>
+                      <div className="stat-value" style={{ color:m.c, fontSize:22 }}>{m.val}</div>
+                      <div className="stat-label">{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+                {dunStates.map(d => {
                   const pnN = d.orig + d.flip;
-                  return d.gps ? (
-                    <div key={d.name} className="card" style={{ padding:"10px 14px", borderLeft:`3px solid ${C.gpsGreen}` }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <span style={{ fontSize:11, fontWeight:600 }}>{d.name}</span>
-                        <span className="tag" style={{ background:C.greenDim, color:C.gpsGreen }}>GPS · 82 seats · outside swing model</span>
+                  if (d.gps) return (
+                    <div key={d.name} className="dun-state-row gps">
+                      <div className="dun-state-header">
+                        <span className="dun-state-name">{d.name}</span>
+                        <span className="co-table-tag tag-gainer" style={{ color:"var(--gps)" }}>GPS · 82 seats · outside swing model</span>
                       </div>
                     </div>
-                  ) : (
-                    <div key={d.name} className="card" style={{ padding:"10px 14px", borderLeft:`3px solid ${d.fg?C.green:C.border}` }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                        <span style={{ fontSize:11, fontWeight:600 }}>{d.name}</span>
-                        <span style={{ fontSize:11, fontWeight:700, color:d.fg?C.green:C.red, fontVariantNumeric:"tabular-nums" }}>
+                  );
+                  return (
+                    <div key={d.name} className={`dun-state-row ${d.fg?"won":""}`}>
+                      <div className="dun-state-header">
+                        <span className="dun-state-name">{d.name}</span>
+                        <span className="dun-state-result" style={{ color:d.fg?"var(--green)":"var(--red)" }}>
                           {d.fg?"✓":"✗"} PN {pnN}/{d.total}
                         </span>
                       </div>
-                      <div style={{ height:5, background:C.surface, borderRadius:3, overflow:"hidden", position:"relative" }}>
-                        <div style={{ position:"absolute", height:"100%", width:`${(d.orig/d.total)*100}%`, background:C.pnRed }} />
-                        <div style={{ position:"absolute", height:"100%", left:`${(d.orig/d.total)*100}%`, width:`${(d.flip/d.total)*100}%`, background:"#fb923c" }} />
-                        <div style={{ position:"absolute", left:`${(d.maj/d.total)*100}%`, top:0, bottom:0, width:2, background:C.white }} />
+                      <div className="dun-bar">
+                        <div className="dun-bar-held" style={{ width:`${(d.orig/d.total)*100}%`, background:"#ef4444" }} />
+                        <div className="dun-bar-flip" style={{ left:`${(d.orig/d.total)*100}%`, width:`${(d.flip/d.total)*100}%`, background:"#fb923c" }} />
+                        <div className="dun-bar-marker" style={{ left:`${(d.maj/d.total)*100}%` }} />
                       </div>
                     </div>
                   );
                 })}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ── Coalition Builder tab ── */}
-          {subTab === "builder" && (
-            <CoalitionBuilder partySeats={partySeatsForBuilder} />
-          )}
+            {/* Coalition Builder */}
+            {tab === "builder" && <CoalitionBuilder partySeats={partyPost} />}
 
+          </div>
         </main>
       </div>
 
-      <footer style={{ background:C.surface, borderTop:`1px solid ${C.border}`, padding:"8px 20px", fontSize:9, color:C.subtle, display:"flex", justifyContent:"space-between" }}>
-        <span>TindakMalaysia GE-15 voter roll (Oct 2022) · MECo CC0 · Constituency race-weighted model · Hypothetical</span>
-        <span>GE-15 base: 19 Nov 2022</span>
+      <footer className="footer">
+        <span>TindakMalaysia GE-15 voter roll (Oct 2022) · MECo CC0 · Race-weighted constituency model · Hypothetical scenarios</span>
+        <span>GE-15 · 19 Nov 2022</span>
       </footer>
     </div>
   );
