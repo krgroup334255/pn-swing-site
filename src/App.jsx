@@ -1,6 +1,10 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
+import * as TabsPrimitive from "@radix-ui/react-tabs";
+import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
+import * as ProgressPrimitive from "@radix-ui/react-progress";
+import * as SeparatorPrimitive from "@radix-ui/react-separator";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import "./App.css";
+import { TrendingUp, TrendingDown, RotateCcw, CheckIcon, AlertTriangle } from "lucide-react";
 
 // ── GE-15 Parliament constituency data ──────────────────────────────────────
 // [code, state, coalition, party, marginPct, malay%, chinese%, indian%]
@@ -278,31 +282,59 @@ function computeResults(ms, cs, is) {
   return { base, toPN, fromPN };
 }
 
-// ── Small reusable components ────────────────────────────────────────────────
+// ── Components ────────────────────────────────────────────────────────────────
+
+function Badge({ children, variant = "default" }) {
+  const variants = {
+    default: "bg-zinc-800 text-zinc-300 border border-zinc-700",
+    success: "bg-emerald-950 text-emerald-400 border border-emerald-800",
+    danger:  "bg-red-950 text-red-400 border border-red-800",
+    warning: "bg-amber-950 text-amber-400 border border-amber-800",
+  };
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${variants[variant]}`}>
+      {children}
+    </span>
+  );
+}
+
+function Card({ children, className = "" }) {
+  return (
+    <div className={`bg-zinc-900 border border-zinc-800 rounded-xl ${className}`}>
+      {children}
+    </div>
+  );
+}
 
 function RaceSlider({ label, value, onChange, color }) {
   const pct = ((value + 60) / 120) * 100;
-  const vc = value > 0 ? "pos" : value < 0 ? "neg" : "zero";
+  const isPos = value > 0, isNeg = value < 0;
   return (
-    <div className="slider-row">
-      <div className="slider-header">
-        <div className="slider-label">
-          <div className="slider-dot" style={{ background: color }} />
-          {label}
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+          <span className="text-xs font-medium text-zinc-300">{label}</span>
         </div>
-        <span className={`slider-value ${vc}`}>
+        <span className={`text-xs font-mono font-semibold tabular-nums ${isPos ? "text-emerald-400" : isNeg ? "text-red-400" : "text-zinc-500"}`}>
           {value > 0 ? `+${value}%` : `${value}%`}
         </span>
       </div>
-      <div className="slider-track">
-        <div className="slider-midline" />
+      <div className="relative">
+        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-zinc-700 z-0" />
         <input
           type="range" min={-60} max={60} step={1} value={value}
           onChange={e => onChange(Number(e.target.value))}
-          style={{ background: `linear-gradient(to right, var(--border) 0%, ${color} ${pct}%, var(--border) ${pct}%)`, accentColor: color }}
+          className="relative z-10 w-full"
+          style={{
+            background: `linear-gradient(to right, hsl(240 3.7% 20%) 0%, ${color} ${pct}%, hsl(240 3.7% 20%) ${pct}%)`,
+            accentColor: color,
+          }}
         />
       </div>
-      <div className="slider-scale"><span>−60%</span><span>0</span><span>+60%</span></div>
+      <div className="flex justify-between text-[10px] text-zinc-600 font-mono">
+        <span>−60%</span><span>0</span><span>+60%</span>
+      </div>
     </div>
   );
 }
@@ -312,84 +344,238 @@ const GIFS = {
   crowd:     "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
 };
 
-function Banner({ pn }) {
+function BannerCard({ pn }) {
   const maj = pn >= 112, close = pn >= 102 && pn < 112;
-  const cls = maj ? "majority" : close ? "close" : "short";
-  const color = maj ? "var(--green)" : close ? "var(--amber)" : "var(--red)";
-  const label = maj ? "✓ Majority achieved" : close ? "⚡ Within striking distance" : "✗ Short of majority";
-  const sub = maj
-    ? `${pn - 112} seats above the 112-seat threshold`
-    : `${112 - pn} seat${112-pn!==1?"s":""} needed to form government`;
   const gif = maj ? GIFS.fireworks : close ? GIFS.crowd : null;
-  return (
-    <div className={`banner ${cls}`}>
-      <div className="banner-body">
-        <div className="banner-status" style={{ color }}>{label}</div>
-        <div className="banner-number" style={{ color }}>{pn}</div>
-        <div className="banner-sub">{sub} · 222 total seats</div>
-      </div>
-      {gif && (
-        <div className="banner-gif">
-          <img src={gif} alt="" />
+
+  if (maj) return (
+    <Card className="border-emerald-800 bg-gradient-to-r from-zinc-900 to-emerald-950 overflow-hidden animate-fade-up">
+      <div className="flex items-center justify-between p-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <CheckIcon className="w-4 h-4 text-emerald-400" />
+            <span className="text-sm font-medium text-emerald-400">Majority achieved</span>
+          </div>
+          <div className="text-5xl font-bold text-emerald-400 tabular-nums">{pn}</div>
+          <div className="text-sm text-zinc-400">{pn - 112} seats above the 112-seat threshold · 222 total</div>
         </div>
+        {gif && <img src={gif} alt="" className="h-20 w-auto rounded-lg opacity-90 object-cover" />}
+      </div>
+    </Card>
+  );
+
+  if (close) return (
+    <Card className="border-amber-800 bg-gradient-to-r from-zinc-900 to-amber-950 overflow-hidden animate-fade-up">
+      <div className="flex items-center justify-between p-5">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span className="text-sm font-medium text-amber-400">Within striking distance</span>
+          </div>
+          <div className="text-5xl font-bold text-amber-400 tabular-nums">{pn}</div>
+          <div className="text-sm text-zinc-400">{112 - pn} seats needed for majority · 222 total</div>
+        </div>
+        {gif && <img src={gif} alt="" className="h-20 w-auto rounded-lg opacity-90 object-cover" />}
+      </div>
+    </Card>
+  );
+
+  return (
+    <Card className="border-red-900 bg-gradient-to-r from-zinc-900 to-red-950 overflow-hidden animate-fade-up">
+      <div className="p-5 space-y-1">
+        <div className="flex items-center gap-2">
+          <TrendingDown className="w-4 h-4 text-red-400" />
+          <span className="text-sm font-medium text-red-400">Short of majority</span>
+        </div>
+        <div className="text-5xl font-bold text-red-400 tabular-nums">{pn}</div>
+        <div className="text-sm text-zinc-400">{112 - pn} seats needed to form government · 222 total</div>
+      </div>
+    </Card>
+  );
+}
+
+function SeatMeter({ pnTotal, pnGained }) {
+  const held   = pnTotal - pnGained;
+  const heldPct   = (held / 222) * 100;
+  const gainedPct = (pnGained / 222) * 100;
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-zinc-200">PN Seat Projection</span>
+        <div className="flex items-center gap-3 text-xs text-zinc-500">
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-red-500 inline-block" />Held</span>
+          <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-orange-400 inline-block" />Gained</span>
+          <span className="flex items-center gap-1.5"><span className="w-px h-3 bg-white/60 inline-block" />Majority (112)</span>
+        </div>
+      </div>
+      <div className="relative h-3 bg-zinc-800 rounded-full overflow-hidden">
+        <div className="absolute inset-y-0 left-0 bg-red-500 rounded-l-full transition-all duration-300" style={{ width: `${heldPct}%` }} />
+        <div className="absolute inset-y-0 bg-orange-400 transition-all duration-300" style={{ left: `${heldPct}%`, width: `${gainedPct}%` }} />
+        <div className="absolute inset-y-0 w-0.5 bg-white/80 z-10" style={{ left: `${(112/222)*100}%` }} />
+      </div>
+      <div className="flex justify-between text-xs text-zinc-600 tabular-nums">
+        <span>0</span><span>112</span><span>222</span>
+      </div>
+    </Card>
+  );
+}
+
+function StatGrid({ stats }) {
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {stats.map((s, i) => (
+        <Card key={i} className="p-4 space-y-1" style={{ borderTopWidth: 2, borderTopColor: s.color }}>
+          <div className="text-2xl font-bold tabular-nums" style={{ color: s.color }}>{s.value}</div>
+          <div className="text-xs font-semibold text-zinc-300">{s.label}</div>
+          <div className="text-xs text-zinc-500">{s.sub}</div>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function CoalitionRow({ co, pre, cur }) {
+  const d = cur - pre;
+  return (
+    <div className="flex items-center gap-2 py-2 border-b border-zinc-800 last:border-0">
+      <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ background: CO_COLOR[co] || "#71717a" }} />
+      <span className="text-xs font-medium text-zinc-300 w-12">{co}</span>
+      <div className="flex-1 bg-zinc-800 rounded-full h-1.5 overflow-hidden">
+        <div className="h-full rounded-full transition-all duration-300" style={{ width: `${cur/222*100}%`, background: CO_COLOR[co] || "#71717a" }} />
+      </div>
+      <span className="text-xs tabular-nums text-zinc-200 w-6 text-right">{cur}</span>
+      {d !== 0 && (
+        <span className={`text-xs tabular-nums font-medium w-8 text-right ${d > 0 ? "text-emerald-400" : "text-red-400"}`}>
+          {d > 0 ? `+${d}` : d}
+        </span>
       )}
     </div>
   );
 }
 
-function CoTable({ coalitions, base, post, gainerCo, loserCo }) {
+function OverviewTab({ coalitions, base, post, gainerCo, loserCo, chartData }) {
   return (
-    <div>
-      {coalitions.map(co => {
-        const pre = base[co]||0, cur = post[co]||0, d = cur - pre;
-        if (!pre && !cur) return null;
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <Card className="p-4">
+        <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">Coalition Changes</div>
+        {coalitions.map(co => {
+          const pre = base[co]||0, cur = post[co]||0;
+          if (!pre && !cur) return null;
+          return <CoalitionRow key={co} co={co} pre={pre} cur={cur} />;
+        })}
+      </Card>
+      <Card className="p-4">
+        <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-3">PN Seats by State</div>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={chartData} layout="vertical" margin={{ left: 62, right: 8, top: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
+            <XAxis type="number" tick={{ fill: "#52525b", fontSize: 9 }} />
+            <YAxis type="category" dataKey="name" tick={{ fill: "#71717a", fontSize: 9 }} width={58} />
+            <Tooltip
+              contentStyle={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 8, fontSize: 11 }}
+              formatter={(v, n) => [v, n === "held" ? "Held" : n === "gained" ? "Gained" : "Others"]}
+            />
+            <Bar dataKey="held"   stackId="a" fill="#ef4444" />
+            <Bar dataKey="gained" stackId="a" fill="#fb923c" />
+            <Bar dataKey="other"  stackId="a" fill="#3f3f46" radius={[0,3,3,0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+    </div>
+  );
+}
+
+function PartiesTab({ partyPost }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Object.entries(COALITION_PARTIES).map(([coName, parties]) => {
+        const maxSeats = Math.max(...parties.map(p => partyPost[p]||0), 1);
+        const total    = parties.reduce((s, p) => s + (partyPost[p]||0), 0);
         return (
-          <div key={co} className="co-table-row">
-            <div className="co-stripe" style={{ background: CO_COLOR[co]||"var(--text-subtle)" }} />
-            <span className="co-table-name">{co}</span>
-            {co===gainerCo && <span className="co-table-tag tag-gainer">Gainer</span>}
-            {co===loserCo  && <span className="co-table-tag tag-loser">Loser</span>}
-            <span className="co-table-spacer" />
-            <span className="co-table-pre">{pre}</span>
-            <span className="co-table-arrow">→</span>
-            <span className="co-table-post" style={{ color: d>0?"var(--green)":d<0?"var(--red)":"var(--text-muted)" }}>{cur}</span>
-            <span className="co-table-delta" style={{ color: d>0?"var(--green)":d<0?"var(--red)":"transparent" }}>
-              {d>0?`+${d}`:d<0?d:""}
-            </span>
-          </div>
+          <Card key={coName} className="p-4 space-y-3" style={{ borderTopWidth: 2, borderTopColor: CO_COLOR[coName] || "#52525b" }}>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-zinc-200">{coName}</span>
+              <Badge>{total} seats</Badge>
+            </div>
+            <div className="space-y-2">
+              {parties.map(p => {
+                const cur = partyPost[p]||0, base = PARTY_BASE[p]||0, d = cur - base;
+                const pct = maxSeats > 0 ? Math.min(cur / maxSeats * 100, 100) : 0;
+                return (
+                  <div key={p} className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: PARTY_COLOR[p] || "#71717a" }} />
+                        <span className="text-zinc-400">{p}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 tabular-nums">
+                        <span className="text-zinc-200 font-medium">{cur}</span>
+                        {d !== 0 && (
+                          <span className={`text-xs ${d > 0 ? "text-emerald-400" : "text-red-400"}`}>
+                            {d > 0 ? `+${d}` : d}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: PARTY_COLOR[p] || "#71717a" }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
         );
       })}
     </div>
   );
 }
 
-function PartyCard({ coName, parties, partyPost }) {
-  const maxSeats = Math.max(...parties.map(p => partyPost[p]||0), 1);
-  const total = parties.reduce((s,p) => s+(partyPost[p]||0), 0);
+function DunTab({ dunSwing, dn }) {
+  const dunStates = Object.entries(dn.states).map(([st, v]) => ({
+    name: st.replace("P. Pinang","P.Pinang").replace("N. Sembilan","N.Semb"),
+    orig: v.o, flip: v.f, total: v.t, maj: v.m, fg: v.g, gps: !!v.gps,
+  })).sort((a, b) => a.gps - b.gps || (b.orig + b.flip) / b.total - (a.orig + a.flip) / a.total);
+
   return (
-    <div className="panel" style={{ borderTop: `2px solid ${CO_COLOR[coName]||"var(--border)"}` }}>
-      <div className="panel-full">
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
-          <span style={{ fontSize:12, fontWeight:700 }}>{coName}</span>
-          <span style={{ fontSize:11, color:"var(--text-muted)", fontVariantNumeric:"tabular-nums" }}>{total} seats</span>
-        </div>
-        {parties.map(p => {
-          const cur = partyPost[p]||0, base = PARTY_BASE[p]||0, d = cur-base;
-          const pct = maxSeats > 0 ? Math.min(cur/maxSeats*100, 100) : 0;
+    <div className="space-y-3">
+      <div className="flex items-center justify-between p-3 bg-zinc-900 border border-zinc-800 rounded-lg">
+        <span className="text-xs text-zinc-400">DUN model follows Malay slider · snapped to nearest step (10/15/20/25/30%)</span>
+        <Badge variant="danger">Malay {dunSwing}%</Badge>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="p-4 border-t-2 border-t-emerald-700">
+          <div className="text-2xl font-bold text-emerald-400 tabular-nums">{dn.gainer.co} +{dn.gainer.d}</div>
+          <div className="text-xs text-zinc-400 mt-1">DUN Gainer</div>
+        </Card>
+        <Card className="p-4 border-t-2 border-t-red-700">
+          <div className="text-2xl font-bold text-red-400 tabular-nums">{dn.loser.co} {dn.loser.d}</div>
+          <div className="text-xs text-zinc-400 mt-1">DUN Loser</div>
+        </Card>
+      </div>
+      <div className="space-y-2">
+        {dunStates.map(d => {
+          if (d.gps) return (
+            <Card key={d.name} className="p-3 flex items-center justify-between">
+              <span className="text-sm font-medium text-zinc-300">{d.name}</span>
+              <Badge variant="success">GPS · 82 seats · outside swing model</Badge>
+            </Card>
+          );
+          const pnN = d.orig + d.flip;
           return (
-            <div key={p} className="party-row">
-              <div className="party-stripe" style={{ background: PARTY_COLOR[p]||"var(--text-subtle)" }} />
-              <span className="party-name">{p}</span>
-              <div className="party-bar-track">
-                <div className="party-bar-fill" style={{ width:`${pct}%`, background: PARTY_COLOR[p]||"var(--text-subtle)" }} />
-              </div>
-              <span className="party-seats">{cur}</span>
-              {d !== 0 && (
-                <span className="party-delta" style={{ color: d>0?"var(--green)":"var(--red)" }}>
-                  {d>0?`+${d}`:d}
+            <Card key={d.name} className={`p-3 space-y-2 ${d.fg ? "border-emerald-900" : ""}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-zinc-300">{d.name}</span>
+                <span className={`text-xs font-semibold tabular-nums ${d.fg ? "text-emerald-400" : "text-red-400"}`}>
+                  {d.fg ? "✓" : "✗"} PN {pnN}/{d.total}
                 </span>
-              )}
-            </div>
+              </div>
+              <div className="relative h-2 bg-zinc-800 rounded-full overflow-hidden">
+                <div className="absolute inset-y-0 left-0 bg-red-500 rounded-l-full" style={{ width: `${(d.orig/d.total)*100}%` }} />
+                <div className="absolute inset-y-0 bg-orange-400" style={{ left: `${(d.orig/d.total)*100}%`, width: `${(d.flip/d.total)*100}%` }} />
+                <div className="absolute inset-y-0 w-0.5 bg-white/70 z-10" style={{ left: `${(d.maj/d.total)*100}%` }} />
+              </div>
+            </Card>
           );
         })}
       </div>
@@ -399,327 +585,247 @@ function PartyCard({ coName, parties, partyPost }) {
 
 function CoalitionBuilder({ partySeats }) {
   const [checked, setChecked] = useState(new Set(["PAS","Bersatu"]));
-  const toggle = p => setChecked(prev => { const n=new Set(prev); n.has(p)?n.delete(p):n.add(p); return n; });
-  const total = [...checked].reduce((s,p) => s+(partySeats[p]||0), 0);
+  const toggle = p => setChecked(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
+  const total  = [...checked].reduce((s, p) => s + (partySeats[p]||0), 0);
   const hasMaj = total >= 112;
-  const fillW = Math.min(total/222*100, 100);
+  const fillW  = Math.min((total / 222) * 100, 100);
+
   return (
-    <div className="panel">
-      <div className="panel-full">
-        <div className="builder-header">
-          <div>
-            <div className="builder-title">Coalition Builder</div>
-            <div className="builder-sub">Select parties to simulate a government</div>
-          </div>
-          <div style={{ textAlign:"right" }}>
-            <div className="builder-count" style={{ color: hasMaj?"var(--green)":"var(--red)" }}>{total}</div>
-            <div className="builder-count-sub" style={{ color: hasMaj?"var(--green)":"var(--text-subtle)" }}>
-              {hasMaj ? "✓ Majority" : `${112-total} short`}
-            </div>
-          </div>
+    <Card className="p-5 space-y-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-sm font-semibold text-zinc-200">Coalition Builder</div>
+          <div className="text-xs text-zinc-500 mt-0.5">Select parties to simulate a government</div>
         </div>
-        <div className="builder-progress">
-          <div className="builder-progress-fill"
-            style={{ width:`${fillW}%`, background: hasMaj?"var(--green)":"var(--blue)" }} />
-          <div className="builder-progress-marker" style={{ left:`${112/222*100}%` }} />
-        </div>
-        <div className="builder-grid">
-          {Object.entries(COALITION_PARTIES).map(([coName, parties]) => (
-            <div key={coName} className="builder-group">
-              <div className="builder-group-label" style={{ color: CO_COLOR[coName]||"var(--text-subtle)" }}>{coName}</div>
-              {parties.map(p => (
-                <label key={p} className="builder-party-row">
-                  <input type="checkbox" checked={checked.has(p)} onChange={() => toggle(p)} />
-                  <div className="builder-party-dot" style={{ background: PARTY_COLOR[p]||"var(--text-subtle)" }} />
-                  <span className="builder-party-name">{p}</span>
-                  <span className="builder-party-seats">{partySeats[p]||0}</span>
-                </label>
-              ))}
-            </div>
-          ))}
+        <div className="text-right">
+          <div className={`text-3xl font-bold tabular-nums ${hasMaj ? "text-emerald-400" : "text-red-400"}`}>{total}</div>
+          <div className={`text-xs font-medium ${hasMaj ? "text-emerald-500" : "text-zinc-500"}`}>
+            {hasMaj ? "Majority" : `${112 - total} seats short`}
+          </div>
         </div>
       </div>
-    </div>
+
+      <div className="space-y-1">
+        <div className="relative h-2 bg-zinc-800 rounded-full overflow-hidden">
+          <div
+            className="absolute inset-y-0 left-0 rounded-full transition-all duration-300"
+            style={{ width: `${fillW}%`, background: hasMaj ? "#22c55e" : "#3b82f6" }}
+          />
+          <div className="absolute inset-y-0 w-0.5 bg-white/70 z-10" style={{ left: `${(112/222)*100}%` }} />
+        </div>
+        <div className="flex justify-between text-[10px] text-zinc-600 tabular-nums">
+          <span>0</span><span>112</span><span>222</span>
+        </div>
+      </div>
+
+      <SeparatorPrimitive.Root className="h-px bg-zinc-800" />
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+        {Object.entries(COALITION_PARTIES).map(([coName, parties]) => (
+          <div key={coName} className="space-y-2">
+            <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: CO_COLOR[coName] || "#71717a" }}>
+              {coName}
+            </div>
+            {parties.map(p => (
+              <label key={p} className="flex items-center gap-2 cursor-pointer group">
+                <CheckboxPrimitive.Root
+                  checked={checked.has(p)}
+                  onCheckedChange={() => toggle(p)}
+                  className="w-4 h-4 rounded border border-zinc-600 bg-zinc-800 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600 flex items-center justify-center flex-shrink-0 transition-colors"
+                >
+                  <CheckboxPrimitive.Indicator>
+                    <CheckIcon className="w-3 h-3 text-white" />
+                  </CheckboxPrimitive.Indicator>
+                </CheckboxPrimitive.Root>
+                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: PARTY_COLOR[p] || "#71717a" }} />
+                <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors">{p}</span>
+                <span className="text-xs tabular-nums text-zinc-500 ml-auto">{partySeats[p]||0}</span>
+              </label>
+            ))}
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [tab, setTab] = useState("overview");
   const [ms, setMs] = useState(15);
   const [cs, setCs] = useState(0);
   const [is, setIs] = useState(0);
 
   const { base, toPN, fromPN } = useMemo(() => computeResults(ms, cs, is), [ms, cs, is]);
 
-  const toPNSet   = new Set(toPN.map(f=>f.code));
-  const fromPNSet = new Set(fromPN.map(f=>f.code));
+  const toPNSet   = new Set(toPN.map(f => f.code));
+  const fromPNSet = new Set(fromPN.map(f => f.code));
 
-  const post = { ...base };
+  const post     = { ...base };
   const partyPost = { ...PARTY_BASE };
   for (const { coalition, party } of toPN) {
-    post[coalition]--; post.PN = (post.PN||0)+1;
-    if (partyPost[party]!==undefined) partyPost[party]--;
+    post[coalition]--; post.PN = (post.PN||0) + 1;
+    if (partyPost[party] !== undefined) partyPost[party]--;
     partyPost["Bersatu"]++;
   }
   for (const { party } of fromPN) {
-    post.PN--; post.PH = (post.PH||0)+1;
-    if (partyPost[party]!==undefined) partyPost[party]--;
+    post.PN--; post.PH = (post.PH||0) + 1;
+    if (partyPost[party] !== undefined) partyPost[party]--;
     partyPost["PKR"]++;
   }
 
-  const pnTotal = post.PN||0;
+  const pnTotal  = post.PN||0;
   const pnGained = toPN.length;
   const pnLost   = fromPN.length;
   const hasMaj   = pnTotal >= 112;
 
   const coalitions = ["PN","PH","BN","GPS","GRS","IND"];
-  let gainerCo="PN", gainerD=0, loserCo="PH", loserD=0;
+  let gainerCo = "PN", gainerD = 0, loserCo = "PH", loserD = 0;
   for (const co of coalitions) {
-    const d = (post[co]||0)-(base[co]||0);
-    if (d > gainerD) { gainerD=d; gainerCo=co; }
-    if (d < loserD)  { loserD=d;  loserCo=co; }
+    const d = (post[co]||0) - (base[co]||0);
+    if (d > gainerD) { gainerD = d; gainerCo = co; }
+    if (d < loserD)  { loserD = d;  loserCo  = co; }
   }
 
-  // State chart data
   const stateMap = {};
   for (const [code, state, coalition] of SEATS) {
     if (!SWING_STATES.has(state)) continue;
-    if (!stateMap[state]) stateMap[state] = {held:0,gained:0,other:0};
-    if (coalition==="PN" && !fromPNSet.has(code)) stateMap[state].held++;
+    if (!stateMap[state]) stateMap[state] = { held:0, gained:0, other:0 };
+    if (coalition === "PN" && !fromPNSet.has(code)) stateMap[state].held++;
     else if (toPNSet.has(code)) stateMap[state].gained++;
     else stateMap[state].other++;
   }
   const chartData = Object.entries(stateMap)
-    .map(([st,v]) => ({
+    .map(([st, v]) => ({
       name: st.replace("WP KL","KL").replace("WP Putrajaya","Putrajaya")
                .replace("N. Sembilan","N.Semb").replace("P. Pinang","P.Pinang"),
-      held:v.held, gained:v.gained, other:v.other
+      held: v.held, gained: v.gained, other: v.other,
     }))
-    .filter(d => d.held+d.gained > 0)
-    .sort((a,b) => (b.held+b.gained)-(a.held+a.gained));
+    .filter(d => d.held + d.gained > 0)
+    .sort((a, b) => (b.held + b.gained) - (a.held + a.gained));
 
-  // DUN
   const dunSwing = snapDunSwing(ms);
   const dn = DUN[dunSwing];
-  const dunStates = Object.entries(dn.states).map(([st,v]) => ({
-    name: st.replace("P. Pinang","P.Pinang").replace("N. Sembilan","N.Semb"),
-    orig:v.o, flip:v.f, total:v.t, maj:v.m, fg:v.g, gps:!!v.gps
-  })).sort((a,b) => a.gps-b.gps || (b.orig+b.flip)/b.total-(a.orig+a.flip)/a.total);
 
-  const tabs = [
-    { k:"overview", l:"Overview" },
-    { k:"parties",  l:"Parties" },
-    { k:"dun",      l:"State DUN" },
-    { k:"builder",  l:"Coalition Builder" },
+  const stats = [
+    { value: pnTotal,               label: "PN Seats",  sub: hasMaj ? `+${pnTotal-112} above majority` : `${112-pnTotal} seats short`, color: hasMaj ? "#22c55e" : "#ef4444" },
+    { value: `+${pnGained}`,        label: "Seats Gained", sub: "flipped to PN",    color: "#f59e0b" },
+    { value: pnLost > 0 ? `-${pnLost}` : "0", label: "Seats Lost", sub: "lost from PN", color: pnLost > 0 ? "#ef4444" : "#52525b" },
+    { value: loserD,                label: loserCo,    sub: "biggest loser",        color: "#ef4444" },
   ];
 
-  const heldPct   = ((pnTotal - pnGained) / 222) * 100;
-  const gainedPct = (pnGained / 222) * 100;
-  const majPct    = (112 / 222) * 100;
-
   return (
-    <div className="app">
+    <div className="flex flex-col h-screen bg-zinc-950 text-zinc-100 overflow-hidden">
 
       {/* Navbar */}
-      <nav className="navbar">
-        <div className="navbar-logo">
-          <div className="navbar-logo-dots">
-            <div className="dot dot-pn" />
-            <div className="dot dot-ph" />
-            <div className="dot dot-bn" />
+      <header className="flex-shrink-0 h-12 bg-zinc-900 border-b border-zinc-800 flex items-center px-4 gap-3 z-50">
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1">
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+            <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
           </div>
-          Malaysia GE-15 · Swing Simulator
+          <span className="text-sm font-semibold text-zinc-100">Malaysia GE-15</span>
+          <span className="text-zinc-600 text-sm">·</span>
+          <span className="text-sm text-zinc-400">Swing Simulator</span>
         </div>
-        <div className="navbar-spacer" />
-        <span className="badge">GE-15 Baseline · 222 Seats</span>
-        <button className="btn" onClick={() => { setMs(0); setCs(0); setIs(0); }}>
+        <div className="flex-1" />
+        <Badge>GE-15 Baseline · 222 Seats</Badge>
+        <button
+          onClick={() => { setMs(0); setCs(0); setIs(0); }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-zinc-100 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg transition-colors"
+        >
+          <RotateCcw className="w-3 h-3" />
           Reset
         </button>
-      </nav>
+      </header>
 
-      <div className="body">
+      <div className="flex flex-1 overflow-hidden">
 
         {/* Sidebar */}
-        <aside className="sidebar">
-          <div className="sidebar-inner">
-            <div className="sidebar-section-label">Vote swing to PN</div>
-
-            <RaceSlider label="Malay"   value={ms} onChange={setMs} color="#ef4444" />
-            <RaceSlider label="Chinese" value={cs} onChange={setCs} color="#3b82f6" />
-            <RaceSlider label="Indian"  value={is} onChange={setIs} color="#22c55e" />
-
-            <hr className="slider-divider" />
-            <div style={{ fontSize:10, color:"var(--text-subtle)", lineHeight:1.7, marginBottom:16 }}>
-              Positive → toward PN · Negative → away from PN<br/>
-              Model: race-weighted per constituency · Peninsular + WP · ±60%
+        <aside className="w-60 flex-shrink-0 bg-zinc-900 border-r border-zinc-800 overflow-y-auto">
+          <div className="p-4 space-y-5">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3">
+                Vote swing to PN
+              </div>
+              <div className="space-y-5">
+                <RaceSlider label="Malay"   value={ms} onChange={setMs} color="#ef4444" />
+                <RaceSlider label="Chinese" value={cs} onChange={setCs} color="#3b82f6" />
+                <RaceSlider label="Indian"  value={is} onChange={setIs} color="#22c55e" />
+              </div>
+              <p className="text-[10px] text-zinc-600 leading-relaxed mt-3">
+                Positive → toward PN · Negative → away<br />
+                Race-weighted per constituency · ±60%
+              </p>
             </div>
 
-            <div className="sidebar-section-label">Live result</div>
-            {coalitions.map(co => {
-              const pre=base[co]||0, cur=post[co]||0, d=cur-pre;
-              if (!pre && !cur) return null;
-              return (
-                <div key={co} className="live-result-row">
-                  <div className="co-stripe" style={{ background: CO_COLOR[co]||"var(--text-subtle)" }} />
-                  <span className="co-name">{co}</span>
-                  <div className="co-bar-track">
-                    <div className="co-bar-fill" style={{ width:`${cur/222*100}%`, background: CO_COLOR[co]||"var(--text-subtle)" }} />
-                  </div>
-                  <span className="co-seats">{cur}</span>
-                  {d!==0 && <span className={`co-delta ${d>0?"pos":"neg"}`}>{d>0?`+${d}`:d}</span>}
-                </div>
-              );
-            })}
+            <SeparatorPrimitive.Root className="h-px bg-zinc-800" />
+
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mb-3">
+                Live result
+              </div>
+              <div className="space-y-0.5">
+                {coalitions.map(co => {
+                  const pre = base[co]||0, cur = post[co]||0;
+                  if (!pre && !cur) return null;
+                  return <CoalitionRow key={co} co={co} pre={pre} cur={cur} />;
+                })}
+              </div>
+            </div>
           </div>
         </aside>
 
-        {/* Main */}
-        <main className="main">
-          <div className="main-inner">
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="p-5 space-y-4 max-w-5xl">
 
-            <Banner pn={pnTotal} />
+            <BannerCard pn={pnTotal} />
+            <SeatMeter pnTotal={pnTotal} pnGained={pnGained} />
+            <StatGrid stats={stats} />
 
-            {/* Seat meter */}
-            <div className="meter-card">
-              <div className="meter-header">
-                <span className="meter-title">PN Seat Projection — {pnTotal} / 222</span>
-                <div className="meter-legend">
-                  <div className="legend-item"><div className="legend-swatch" style={{ background:"#ef4444" }} />Held</div>
-                  <div className="legend-item"><div className="legend-swatch" style={{ background:"#fb923c" }} />Gained</div>
-                  <div className="legend-item"><div className="legend-swatch" style={{ background:"#fff", width:2, height:10, borderRadius:1 }} />Majority (112)</div>
-                </div>
-              </div>
-              <div className="meter-bar">
-                <div className="meter-held"   style={{ width:`${heldPct}%`,   background:"#ef4444" }} />
-                <div className="meter-gained" style={{ left:`${heldPct}%`, width:`${gainedPct}%`, background:"#fb923c" }} />
-                <div className="meter-marker" style={{ left:`${majPct}%` }} />
-              </div>
-            </div>
-
-            {/* Stat row */}
-            <div className="stat-grid">
-              {[
-                { v:pnTotal,                  l:"PN Seats",    s:hasMaj?`+${pnTotal-112} above majority`:`${112-pnTotal} seats short`, c:hasMaj?"var(--green)":"var(--red)" },
-                { v:`+${pnGained}`,            l:"Gained",      s:"flipped to PN",   c:"var(--amber)" },
-                { v:pnLost>0?`-${pnLost}`:"0",l:"Lost",        s:"lost from PN",    c:pnLost>0?"var(--red)":"var(--text-subtle)" },
-                { v:loserD,                    l:`${loserCo}`,  s:"biggest loser",   c:"var(--red)" },
-              ].map((m,i) => (
-                <div key={i} className="stat-card" style={{ borderTopColor:m.c }}>
-                  <div className="stat-value" style={{ color:m.c }}>{m.v}</div>
-                  <div className="stat-label">{m.l}</div>
-                  <div className="stat-sub">{m.s}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Tab bar */}
-            <div className="tab-bar">
-              {tabs.map(t => (
-                <button key={t.k} className={`tab-btn ${tab===t.k?"active":""}`} onClick={() => setTab(t.k)}>
-                  {t.l}
-                </button>
-              ))}
-            </div>
-
-            {/* Overview */}
-            {tab === "overview" && (
-              <div className="two-col">
-                <div className="panel">
-                  <div className="panel-header">Coalition Changes</div>
-                  <div className="panel-body">
-                    <CoTable coalitions={coalitions} base={base} post={post} gainerCo={gainerCo} loserCo={loserCo} />
-                  </div>
-                </div>
-                <div className="panel">
-                  <div className="panel-header">PN Seats by State</div>
-                  <div className="panel-body">
-                    <ResponsiveContainer width="100%" height={220}>
-                      <BarChart data={chartData} layout="vertical" margin={{ left:62, right:8, top:0, bottom:0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                        <XAxis type="number" tick={{ fill:"var(--text-subtle)", fontSize:9 }} />
-                        <YAxis type="category" dataKey="name" tick={{ fill:"var(--text-muted)", fontSize:9 }} width={58} />
-                        <Tooltip
-                          contentStyle={{ background:"var(--panel-hi)", border:"1px solid var(--border)", borderRadius:6, fontSize:11 }}
-                          formatter={(v,n) => [v, n==="held"?"Held":n==="gained"?"Gained":"Others"]}
-                        />
-                        <Bar dataKey="held"   stackId="a" fill="#ef4444" />
-                        <Bar dataKey="gained" stackId="a" fill="#fb923c" />
-                        <Bar dataKey="other"  stackId="a" fill="var(--border)" radius={[0,3,3,0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Parties */}
-            {tab === "parties" && (
-              <div className="two-col">
-                {Object.entries(COALITION_PARTIES).map(([coName, parties]) => (
-                  <PartyCard key={coName} coName={coName} parties={parties} partyPost={partyPost} />
+            <TabsPrimitive.Root defaultValue="overview">
+              <TabsPrimitive.List className="flex gap-1 p-1 bg-zinc-900 border border-zinc-800 rounded-xl w-fit">
+                {[
+                  { k: "overview", l: "Overview" },
+                  { k: "parties",  l: "Parties" },
+                  { k: "dun",      l: "State DUN" },
+                  { k: "builder",  l: "Coalition Builder" },
+                ].map(t => (
+                  <TabsPrimitive.Trigger
+                    key={t.k}
+                    value={t.k}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg text-zinc-500 data-[state=active]:bg-zinc-700 data-[state=active]:text-zinc-100 hover:text-zinc-300 transition-colors"
+                  >
+                    {t.l}
+                  </TabsPrimitive.Trigger>
                 ))}
-              </div>
-            )}
+              </TabsPrimitive.List>
 
-            {/* State DUN */}
-            {tab === "dun" && (
-              <div className="content-stack">
-                <div className="dun-info">
-                  <span className="dun-info-text">DUN follows Malay slider · snapped to nearest model step (10/15/20/25/30%)</span>
-                  <span className="dun-swing-label" style={{ color:"var(--pn)" }}>Malay {dunSwing}%</span>
-                </div>
-                <div className="two-col" style={{ marginBottom:4 }}>
-                  {[
-                    { label:"DUN Gainer", val:`${dn.gainer.co} +${dn.gainer.d}`, c:"var(--green)" },
-                    { label:"DUN Loser",  val:`${dn.loser.co} ${dn.loser.d}`,    c:"var(--red)"   },
-                  ].map(m => (
-                    <div key={m.label} className="stat-card" style={{ borderTopColor:m.c }}>
-                      <div className="stat-value" style={{ color:m.c, fontSize:22 }}>{m.val}</div>
-                      <div className="stat-label">{m.label}</div>
-                    </div>
-                  ))}
-                </div>
-                {dunStates.map(d => {
-                  const pnN = d.orig + d.flip;
-                  if (d.gps) return (
-                    <div key={d.name} className="dun-state-row gps">
-                      <div className="dun-state-header">
-                        <span className="dun-state-name">{d.name}</span>
-                        <span className="co-table-tag tag-gainer" style={{ color:"var(--gps)" }}>GPS · 82 seats · outside swing model</span>
-                      </div>
-                    </div>
-                  );
-                  return (
-                    <div key={d.name} className={`dun-state-row ${d.fg?"won":""}`}>
-                      <div className="dun-state-header">
-                        <span className="dun-state-name">{d.name}</span>
-                        <span className="dun-state-result" style={{ color:d.fg?"var(--green)":"var(--red)" }}>
-                          {d.fg?"✓":"✗"} PN {pnN}/{d.total}
-                        </span>
-                      </div>
-                      <div className="dun-bar">
-                        <div className="dun-bar-held" style={{ width:`${(d.orig/d.total)*100}%`, background:"#ef4444" }} />
-                        <div className="dun-bar-flip" style={{ left:`${(d.orig/d.total)*100}%`, width:`${(d.flip/d.total)*100}%`, background:"#fb923c" }} />
-                        <div className="dun-bar-marker" style={{ left:`${(d.maj/d.total)*100}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="mt-4">
+                <TabsPrimitive.Content value="overview">
+                  <OverviewTab coalitions={coalitions} base={base} post={post} gainerCo={gainerCo} loserCo={loserCo} chartData={chartData} />
+                </TabsPrimitive.Content>
+                <TabsPrimitive.Content value="parties">
+                  <PartiesTab partyPost={partyPost} />
+                </TabsPrimitive.Content>
+                <TabsPrimitive.Content value="dun">
+                  <DunTab dunSwing={dunSwing} dn={dn} />
+                </TabsPrimitive.Content>
+                <TabsPrimitive.Content value="builder">
+                  <CoalitionBuilder partySeats={partyPost} />
+                </TabsPrimitive.Content>
               </div>
-            )}
-
-            {/* Coalition Builder */}
-            {tab === "builder" && <CoalitionBuilder partySeats={partyPost} />}
+            </TabsPrimitive.Root>
 
           </div>
+
+          <footer className="px-5 py-4 border-t border-zinc-800 flex justify-between text-[10px] text-zinc-600">
+            <span>TindakMalaysia GE-15 voter roll (Oct 2022) · MECo CC0 · Race-weighted constituency model · Hypothetical scenarios</span>
+            <span>GE-15 · 19 Nov 2022</span>
+          </footer>
         </main>
       </div>
-
-      <footer className="footer">
-        <span>TindakMalaysia GE-15 voter roll (Oct 2022) · MECo CC0 · Race-weighted constituency model · Hypothetical scenarios</span>
-        <span>GE-15 · 19 Nov 2022</span>
-      </footer>
     </div>
   );
 }
