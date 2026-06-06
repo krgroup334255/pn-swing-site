@@ -254,7 +254,19 @@ const COALITION_PARTIES = {
   IND:     ["IND"],
 };
 
-const CO_COLOR = { PN:"#ef4444", PH:"#3b82f6", BN:"#f59e0b", GPS:"#22c55e", GRS:"#14b8a6", Warisan:"#a855f7", IND:"#71717a" };
+// Bersama (Pakatan Maju) MPs — individually selectable in Coalition Builder only.
+// They remain classified as PH in the main seat model; each key = 1 seat.
+const BERSAMA_MEMBERS = {
+  "Rafizi (Pandan)":       1,
+  "Rodziah (Ampang)":      1,
+  "Zahir (Wangsa Maju)":   1,
+  "Lee Chean Chung (PJ)":  1,
+  "Wong Chen (Subang)":    1,
+  "Bakhtiar (Balik Pulau)":1,
+  "Nik Nazmi (Setiawangsa)":1,
+};
+
+const CO_COLOR = { PN:"#ef4444", PH:"#3b82f6", BN:"#f59e0b", GPS:"#22c55e", GRS:"#14b8a6", Warisan:"#a855f7", IND:"#71717a", Bersama:"#e879f9" };
 const PARTY_COLOR = {
   PAS:"#b91c1c", Bersatu:"#ef4444",
   PKR:"#1d4ed8", DAP:"#dc2626", Amanah:"#60a5fa", UPKO:"#93c5fd",
@@ -586,8 +598,14 @@ function DunTab({ dunSwing, dn }) {
 
 function CoalitionBuilder({ partySeats }) {
   const [checked, setChecked] = useState(new Set(["PAS","Bersatu"]));
+  const [bersamaChecked, setBersamaChecked] = useState(new Set());
+
   const toggle = p => setChecked(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
-  const total  = [...checked].reduce((s, p) => s + (partySeats[p]||0), 0);
+  const toggleBersama = mp => setBersamaChecked(prev => { const n = new Set(prev); n.has(mp) ? n.delete(mp) : n.add(mp); return n; });
+
+  const partyTotal   = [...checked].reduce((s, p) => s + (partySeats[p]||0), 0);
+  const bersamaTotal = bersamaChecked.size; // each MP = 1 seat
+  const total  = partyTotal + bersamaTotal;
   const hasMaj = total >= 112;
   const fillW  = Math.min((total / 222) * 100, 100);
 
@@ -645,6 +663,33 @@ function CoalitionBuilder({ partySeats }) {
             ))}
           </div>
         ))}
+
+        {/* Bersama / Pakatan Maju — individual MPs, each = 1 seat */}
+        <div className="space-y-2 col-span-2 sm:col-span-1">
+          <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: CO_COLOR.Bersama }}>
+            Bersama
+          </div>
+          <div className="text-[10px] text-zinc-600 leading-tight -mt-1">Pakatan Maju MPs · 1 seat each</div>
+          {Object.keys(BERSAMA_MEMBERS).map(mp => (
+            <label key={mp} className="flex items-center gap-2 cursor-pointer group">
+              <CheckboxPrimitive.Root
+                checked={bersamaChecked.has(mp)}
+                onCheckedChange={() => toggleBersama(mp)}
+                className="w-4 h-4 rounded border border-zinc-600 bg-zinc-800 data-[state=checked]:bg-fuchsia-600 data-[state=checked]:border-fuchsia-600 flex items-center justify-center flex-shrink-0 transition-colors"
+              >
+                <CheckboxPrimitive.Indicator>
+                  <CheckIcon className="w-3 h-3 text-white" />
+                </CheckboxPrimitive.Indicator>
+              </CheckboxPrimitive.Root>
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: CO_COLOR.Bersama }} />
+              <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors leading-tight">{mp}</span>
+              <span className="text-xs tabular-nums text-zinc-500 ml-auto">1</span>
+            </label>
+          ))}
+          {bersamaTotal > 0 && (
+            <div className="text-[10px] text-fuchsia-400 tabular-nums mt-1">{bersamaTotal} MP{bersamaTotal > 1 ? "s" : ""} selected</div>
+          )}
+        </div>
       </div>
     </Card>
   );
