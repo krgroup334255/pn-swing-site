@@ -639,6 +639,7 @@ function CoalitionBuilder({ partySeats }) {
 
       <SeparatorPrimitive.Root className="h-px bg-zinc-800" />
 
+      {/* Coalition parties grid */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {Object.entries(COALITION_PARTIES).map(([coName, parties]) => (
           <div key={coName} className="space-y-2">
@@ -658,18 +659,27 @@ function CoalitionBuilder({ partySeats }) {
                 </CheckboxPrimitive.Root>
                 <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: PARTY_COLOR[p] || "#71717a" }} />
                 <span className="text-xs text-zinc-400 group-hover:text-zinc-200 transition-colors">{p}</span>
-                <span className="text-xs tabular-nums text-zinc-500 ml-auto">{partySeats[p]||0}</span>
+                <span className="text-xs tabular-nums text-zinc-500 ml-auto">{PARTY_BASE[p]||0}</span>
               </label>
             ))}
           </div>
         ))}
+      </div>
 
-        {/* Bersama / Pakatan Maju — individual MPs, each = 1 seat */}
-        <div className="space-y-2 col-span-2 sm:col-span-1">
+      <SeparatorPrimitive.Root className="h-px bg-zinc-800" />
+
+      {/* Bersama / Pakatan Maju — individual MPs, each = 1 seat */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
           <div className="text-[10px] font-bold uppercase tracking-widest" style={{ color: CO_COLOR.Bersama }}>
             Bersama
           </div>
-          <div className="text-[10px] text-zinc-600 leading-tight -mt-1">Pakatan Maju MPs · 1 seat each</div>
+          <span className="text-[10px] text-zinc-600">· Pakatan Maju MPs · tick to include in count</span>
+          {bersamaTotal > 0 && (
+            <span className="text-[10px] text-fuchsia-400 tabular-nums ml-auto">{bersamaTotal} MP{bersamaTotal > 1 ? "s" : ""} selected</span>
+          )}
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {Object.keys(BERSAMA_MEMBERS).map(mp => (
             <label key={mp} className="flex items-center gap-2 cursor-pointer group">
               <CheckboxPrimitive.Root
@@ -686,9 +696,6 @@ function CoalitionBuilder({ partySeats }) {
               <span className="text-xs tabular-nums text-zinc-500 ml-auto">1</span>
             </label>
           ))}
-          {bersamaTotal > 0 && (
-            <div className="text-[10px] text-fuchsia-400 tabular-nums mt-1">{bersamaTotal} MP{bersamaTotal > 1 ? "s" : ""} selected</div>
-          )}
         </div>
       </div>
     </Card>
