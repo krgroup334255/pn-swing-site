@@ -603,7 +603,7 @@ function CoalitionBuilder({ partySeats }) {
   const toggle = p => setChecked(prev => { const n = new Set(prev); n.has(p) ? n.delete(p) : n.add(p); return n; });
   const toggleBersama = mp => setBersamaChecked(prev => { const n = new Set(prev); n.has(mp) ? n.delete(mp) : n.add(mp); return n; });
 
-  const partyTotal   = [...checked].reduce((s, p) => s + (partySeats[p]||0), 0);
+  const partyTotal   = [...checked].reduce((s, p) => s + (PARTY_BASE[p]||0), 0);
   const bersamaTotal = bersamaChecked.size; // each MP = 1 seat
   const total  = partyTotal + bersamaTotal;
   const hasMaj = total >= 112;
